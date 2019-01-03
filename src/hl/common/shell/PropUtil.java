@@ -20,7 +20,7 @@
  
  */
 
-package hl.common;
+package hl.common.shell;
 
 import java.io.BufferedWriter;
 import java.io.File;

@@ -104,7 +104,7 @@ public class HLProcessMgr
 		{
 			HLProcess onlyProcess 	= getAllProcesses()[0];
 			lShutdown_timeout_ms 	= onlyProcess.getShutdownTimeoutMs();
-			if(!onlyProcess.isStoping())
+			if(onlyProcess.getCurProcessState().isBefore(HLProcess.ProcessState.STOPPING))
 			{
 				onlyProcess.terminateProcess();
 			}
@@ -132,7 +132,7 @@ public class HLProcessMgr
 				{
 					if(proc.isProcessAlive())
 					{
-						System.out.println("   - "+proc.getProcessId());
+						System.out.println("   - "+proc.getProcessId()+" : "+proc.getCurProcessState());
 					}
 				}
 			}
@@ -171,6 +171,11 @@ public class HLProcessMgr
 		}
 		//logger.log(Level.INFO, "All processes terminated");
 		System.out.println("[Termination] All processes terminated");
+		
+		for(HLProcess p : getAllProcesses())
+		{
+			System.out.println("[lifecycle] "+p.getProcessId()+" : "+p.getProcessStateHist());
+		}
 	}
 	
 	

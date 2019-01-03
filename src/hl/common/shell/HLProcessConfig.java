@@ -12,8 +12,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import hl.common.PropUtil;
 import hl.common.shell.HLProcess;
 
 public class HLProcessConfig {
