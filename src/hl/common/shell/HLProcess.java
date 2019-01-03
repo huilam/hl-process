@@ -26,10 +26,13 @@ public class HLProcess implements Runnable
 	{ 
 		IDLE(0), 
 		
-		STARTING(10), START_WAIT_DEP(11), START_WAIT_DEP_TIMEOUT(12), 
-		START_FAILED(15), START_INIT(16), START_INIT_FAILED(17), START_INIT_TIMEOUT(18), STARTED(19), 
+		STARTING(10), START_WAIT_DEP(11), START_INIT(12), STARTED(13), 
 		
-		STOPPING(30), STOP_EXEC_CMD(31), STOP_WAIT_OTHERS(32), STOP_WAIT_OTHERS_TIMEOUT(33), TERMINATED(34);
+		START_WAIT_DEP_FAILED(20), START_WAIT_DEP_TIMEOUT(21), 
+		START_FAILED(22),  START_INIT_FAILED(23), START_INIT_TIMEOUT(24), 
+
+		STOPPING(30), STOP_EXEC_CMD(31), STOP_WAIT_OTHERS(32), STOP_WAIT_OTHERS_TIMEOUT(33),
+		TERMINATED(50);
 		
 		private final int code;
 		 
@@ -118,7 +121,7 @@ public class HLProcess implements Runnable
 	
 	public static String getVersion()
 	{
-		return "HLProcess alpha v0.53";
+		return "HLProcess alpha v0.54";
 	}
 
 	public void setCommandBlockStart(String aBlockSeparator)
@@ -449,6 +452,13 @@ public class HLProcess implements Runnable
 						iter.remove();
 						continue;
 					}
+					else if(d.getCurProcessState().isAtLeast(ProcessState.STOPPING))
+					{
+						String sErr = sPrefix+"Dependance process(es) failed to start ! "+sbDepCmd.toString();
+						logger.log(Level.SEVERE, sErr);
+						setCurProcessState(ProcessState.START_WAIT_DEP_FAILED);
+						onProcessError(this, new Exception(sErr));
+					}
 					else
 					{
 						sbDepCmd.append("\n - ");
@@ -519,7 +529,6 @@ public class HLProcess implements Runnable
 				try {
 					proc = pb.start();
 				} catch (IOException e1) {
-					setCurProcessState(ProcessState.START_FAILED);
 					onProcessError(this, e1);
 				}
 				
