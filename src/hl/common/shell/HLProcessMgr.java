@@ -158,6 +158,7 @@ public class HLProcessMgr
 					//logger.log(Level.WARNING, sb.toString());
 					System.out.println(sb.toString());
 					System.out.println("[Termination] execute 'System.exit(1)'");
+					printProcessLifeCycle();
 					System.exit(1);
 				}
 			}
@@ -171,13 +172,16 @@ public class HLProcessMgr
 		}
 		//logger.log(Level.INFO, "All processes terminated");
 		System.out.println("[Termination] All processes terminated");
-		
-		for(HLProcess p : getAllProcesses())
-		{
-			System.out.println("[lifecycle] "+p.getProcessId()+" : "+p.getProcessStateHist());
-		}
+		printProcessLifeCycle();
 	}
 	
+	private void printProcessLifeCycle()
+	{
+		for(HLProcess p : getAllProcesses())
+		{
+			System.out.println("[process.lifecycle] "+p.getProcessId()+" : "+p.getProcessStateHist());
+		}
+	}
 	
 	public void setLogLevel(Level aLogLevel)
 	{
