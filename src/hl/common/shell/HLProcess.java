@@ -714,9 +714,85 @@ public class HLProcess implements Runnable
 					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);					
 					setCurProcessState(ProcessState.STOP_EXEC_CMD);
 					ProcessBuilder pb = initProcessBuilder(sSplitEndCmd, this.is_def_script_dir);
-					pb.inheritIO();
-					pb.start();
-	
+					Process procTeminate = pb.start();
+					
+					BufferedReader rdr = null;
+					BufferedWriter wrt = null;
+					
+					SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
+					
+					try {
+						rdr = new BufferedReader(new InputStreamReader(procTeminate.getInputStream()));
+						
+						if(this.output_filename!=null)
+						{
+							if(this.output_filename.trim().length()>0)
+							{
+								File fileOutput = new File(this.output_filename);
+								if(!fileOutput.exists())
+								{
+									if(fileOutput.getParentFile()!=null)
+									{
+										fileOutput.getParentFile().mkdirs();
+									}
+								}
+								
+								wrt = new BufferedWriter(new FileWriter(fileOutput, true));
+							}
+						}
+						
+						String sLine = null;
+						
+						if(rdr.ready())
+							sLine = rdr.readLine();
+						
+						String sDebugLine = null;
+						
+						while(procTeminate.isAlive() || sLine!=null)
+						{
+							if(sLine!=null)
+							{
+								sDebugLine = sPrefix + df.format(System.currentTimeMillis()) + sLine;
+		
+								if(wrt!=null)
+								{
+									wrt.write(sDebugLine);
+									wrt.newLine();
+									wrt.flush();
+								}
+								
+								if(this.is_output_console)
+								{
+									System.out.println(sLine);
+								}					
+							}
+							
+							sLine = null;
+							if(rdr.ready())
+							{
+								sLine = rdr.readLine();
+							}
+						}
+					}
+					finally
+					{
+						if(wrt!=null)
+						{
+							try {
+								wrt.flush();
+								wrt.close();
+							} catch (IOException e) {
+							}
+						}
+						//
+						if(rdr!=null)
+						{
+							try {
+								rdr.close();
+							} catch (IOException e) {
+							}
+						}
+					}
 				} catch (IOException e) {
 					
 					if(e.getMessage()!=null)
