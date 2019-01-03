@@ -469,27 +469,31 @@ public class HLProcessConfig {
 	//--
 	/** sample 'process.properties'
 	//--
-# process.@.shell.start.delay.ms=
-# process.@.shell.default.to.script.dir=false
-# process.@.shell.command.block=
-# process.@.shell.command.win=
-# process.@.shell.command.linux=
-# process.@.shell.command.mac=
-# process.@.shell.output.filename=
-# process.@.shell.output.console=false
-# process.@.shell.terminate.command.win=
-# process.@.shell.terminate.command.linux=
-# process.@.shell.terminate.command.mac=
-
-# process.@.init.timeout.ms=
-# process.@.init.success.regex=
-# process.@.init.failed.regex=
-
-# process.@.dependance.processes.local=
-# process.@.dependance.processes.remote=
-# process.@.dependance.check.interval.ms=
-# process.@.dependance.timeout.ms=
+	# process.@.disabled=false
+	#
+	# process.@.shell.start.delay.ms=
+	# process.@.shell.runas.daemon=false
+	# process.@.shell.default.to.script.dir=false
+	# process.@.shell.command.block=
+	# process.@.shell.command.win=
+	# process.@.shell.command.linux=
+	# process.@.shell.command.mac=
+	# process.@.shell.output.filename=
+	# process.@.shell.output.console=false
+	# process.@.shell.terminate.command.win=
+	# process.@.shell.terminate.command.linux=
+	# process.@.shell.terminate.command.mac=
+	# process.@.shell.shutdown.all.on.termination=false
+	# process.@.shell.shutdown.all.timeout.ms=30000
+	#
+	# process.@.init.timeout.ms=
+	# process.@.init.success.regex=
+	# process.@.init.failed.regex=
+	#
+	# process.@.dependance.processes.local=
+	# process.@.dependance.processes.remote=
+	# process.@.dependance.check.interval.ms=
+	# process.@.dependance.timeout.ms=
 	//--
 	**/
-	
 }
