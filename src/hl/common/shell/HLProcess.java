@@ -519,7 +519,7 @@ public class HLProcess implements Runnable
 				try {
 					proc = pb.start();
 				} catch (IOException e1) {
-					setCurProcessState(ProcessState.START_INIT_FAILED);
+					setCurProcessState(ProcessState.START_FAILED);
 					onProcessError(this, e1);
 				}
 				
@@ -604,6 +604,7 @@ public class HLProcess implements Runnable
 											this.is_init_success = m.find();
 											if(this.is_init_success)
 											{
+												setCurProcessState(ProcessState.STARTED);
 												logger.log(Level.INFO, 
 														sPrefix + "init_success - Elapsed: "+milisec2Words(System.currentTimeMillis()-this.run_start_timestamp));
 											}
@@ -644,6 +645,7 @@ public class HLProcess implements Runnable
 								if(this.patt_init_success==null)
 								{
 									this.is_init_success = true;
+									setCurProcessState(ProcessState.STARTED);
 								}
 							}
 							
@@ -654,13 +656,13 @@ public class HLProcess implements Runnable
 							}
 						}
 					} catch (Throwable e) {
+						setCurProcessState(ProcessState.STOPPING);
 						this.exit_value = -1;
 						logger.log(Level.SEVERE, e.getMessage(), e);
 						onProcessError(this, e);
 					}
 					finally
 					{
-						setCurProcessState(ProcessState.STOPPING);
 						if(wrt!=null)
 						{
 							try {
@@ -710,6 +712,7 @@ public class HLProcess implements Runnable
 					System.out.println("[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd);
 					
 					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);					
+					setCurProcessState(ProcessState.STOP_EXEC_CMD);
 					ProcessBuilder pb = initProcessBuilder(sSplitEndCmd, this.is_def_script_dir);
 					pb.inheritIO();
 					pb.start();
