@@ -719,6 +719,7 @@ public class HLProcess implements Runnable
 					BufferedReader rdr = null;
 					BufferedWriter wrt = null;
 					
+					sPrefix = (id==null?"":"["+id+"] ");
 					SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
 					
 					try {
