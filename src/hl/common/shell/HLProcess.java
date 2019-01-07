@@ -655,46 +655,63 @@ public class HLProcess implements Runnable
 										System.out.println(sLine);
 									}
 									
-									logDebug(sDebugLine);
-									
-									if(sLine.length()>0 && isNotStarted())
+									if(sLine.length()>0)
 									{
-										if(pattCmdEnd!=null)
+										if(this.is_init_success)
 										{
-											Matcher m = pattCmdEnd.matcher(sLine);
-											if(m.find())
+											//if end
+											if(pattCmdEnd!=null)
 											{
-												break;
+												Matcher m = pattCmdEnd.matcher(sLine);
+												if(m.find())
+												{
+													proc.destroy();
+													break;
+												}
 											}
 										}
-										
-										if(!this.is_init_failed && this.patt_init_failed!=null)
+										else
 										{
-											Matcher m = this.patt_init_failed.matcher(sLine);
-											this.is_init_failed =  m.find();
-											if(this.is_init_failed)
+											if(this.init_timeout_ms>0)
 											{
-												String sErr = sPrefix + "init_error - Elapsed: "+milisec2Words(System.currentTimeMillis()-this.run_start_timestamp);
-												logger.log(Level.SEVERE, sErr);
-												setCurProcessState(ProcessState.START_INIT_FAILED);
-												onProcessError(this, new Exception(sErr));
-												break;
+												long lElapsed = System.currentTimeMillis() - lStart;
+												if(lElapsed>=this.init_timeout_ms)
+												{
+													String sErr = sPrefix+"Init timeout ! "+milisec2Words(lElapsed)+" - "+getProcessCommand();
+													this.is_init_success = false;
+													logger.log(Level.SEVERE, sErr);
+													break;
+												}
 											}
-										}
-									
-										if(!this.is_init_success)
-										{
+											
+											if(this.patt_init_failed!=null)
+											{
+												Matcher m = this.patt_init_failed.matcher(sLine);
+												this.is_init_failed =  m.find();
+												if(this.is_init_failed)
+												{
+													String sErr = sPrefix + "init_error - Elapsed: "+milisec2Words(System.currentTimeMillis()-this.run_start_timestamp);
+													logger.log(Level.SEVERE, sErr);
+													proc.destroy();
+													break;
+												}
+											}
+
 											if(this.patt_init_success!=null)
 											{
 												Matcher m = this.patt_init_success.matcher(sLine);
 												this.is_init_success = m.find();
 												if(this.is_init_success)
 												{
-													onProcessInitSuccess(this);
 													logger.log(Level.INFO, 
 															sPrefix + "init_success - Elapsed: "+milisec2Words(System.currentTimeMillis()-this.run_start_timestamp));
 												}
 											}
+											else
+											{
+												this.is_init_success = true;
+											}
+											
 										}
 									}
 								}
@@ -707,31 +724,7 @@ public class HLProcess implements Runnable
 									} catch (InterruptedException e) {
 										// TODO Auto-generated catch block
 										e.printStackTrace();
-										onProcessError(this,e);
 										break;
-									}
-								}
-								
-								if(!this.is_init_success && isNotStarted())
-								{
-									if(this.init_timeout_ms>0)
-									{
-										long lElapsed = System.currentTimeMillis() - lStart;
-										if(lElapsed>=this.init_timeout_ms)
-										{
-											String sErr = sPrefix+"Init timeout ! "+milisec2Words(lElapsed)+" - "+getProcessCommand();
-											this.is_init_success = false;
-											logger.log(Level.SEVERE, sErr);
-											setCurProcessState(ProcessState.START_INIT_TIMEOUT);
-											onProcessError(this, new Exception(sErr));
-											break;
-										}
-									}
-									
-									if(this.patt_init_success==null && isNotStarted())
-									{
-										this.is_init_success = true;
-										onProcessInitSuccess(this);
 									}
 								}
 								
@@ -807,18 +800,19 @@ public class HLProcess implements Runnable
 			if(sEndCmd!=null && sEndCmd.trim().length()>0)
 			{
 				try {
+					SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
+					sPrefix = (id==null?"":"["+id+"] ");
+					
 					System.out.println("[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd);
 					
 					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);					
 					ProcessBuilder pb = initProcessBuilder(sSplitEndCmd, this.is_def_script_dir);
-					setCurProcessState(ProcessState.STOP_EXEC_CMD);
-					Process procTeminate = pb.start();
 					
 					BufferedReader rdr = null;
 					BufferedWriter wrt = null;
 					
-					sPrefix = (id==null?"":"["+id+"] ");
-					SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
+					setCurProcessState(ProcessState.STOP_EXEC_CMD);
+					Process procTeminate = pb.start();
 					
 					try {
 						rdr = new BufferedReader(new InputStreamReader(procTeminate.getInputStream()));
@@ -855,7 +849,8 @@ public class HLProcess implements Runnable
 						}
 						Matcher m = null;
 						long lIdleStartTimestamp = System.currentTimeMillis();
-						long lIdleTimeout = 5* _SEC_ms;
+						long lIdleTimeout = 5* _MIN_ms;
+						
 						while(procTeminate.isAlive() || sLine!=null)
 						{
 							if(sLine!=null)
@@ -879,6 +874,7 @@ public class HLProcess implements Runnable
 									m = pattEndRegex.matcher(sLine);
 									if(m.find())
 									{
+										System.out.println("[Termination] Termination end regex matched. - "+sEndRegex);
 										break;
 									}
 								}
@@ -894,12 +890,20 @@ public class HLProcess implements Runnable
 								sLine = rdr.readLine();
 							}
 							
-							if(System.currentTimeMillis()-lIdleStartTimestamp >= lIdleTimeout)
+							long lIdleElapsed = System.currentTimeMillis()-lIdleStartTimestamp;
+							if(lIdleElapsed >= lIdleTimeout)
 							{
-								System.err.println("[Termination] Termination command killed due to idle timeout. - "+lIdleTimeout+"ms");
+								System.out.println("[Termination] Termination command killed due to idle timeout. - "+lIdleTimeout+"ms");
 								break;
 							}
 							
+							try {
+								//let the process rest awhile when no output
+								Thread.sleep(100);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+								break;
+							}
 						}
 					}
 					finally
@@ -935,6 +939,10 @@ public class HLProcess implements Runnable
 					}
 					
 					e.printStackTrace();
+				}
+				finally
+				{
+					System.out.println("[Termination] "+sPrefix+" : complete terminated command.");
 				}
 			}
 		}	
@@ -986,8 +994,8 @@ public class HLProcess implements Runnable
 	{
 		if(getCurProcessState().isBefore(ProcessState.STOPPING))
 		{
-			executeTerminateCmd();
 			setCurProcessState(ProcessState.STOPPING);
+			executeTerminateCmd();
 		}
 		
 	}

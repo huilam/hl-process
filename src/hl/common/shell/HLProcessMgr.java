@@ -85,127 +85,131 @@ public class HLProcessMgr
 		long lLast_notification_ms 	= 0;
 		Vector<HLProcess> vProcesses = new Vector<HLProcess>();
 		
-		if(aCurrentProcess!=null)
-		{
-			aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS);
-		}
-
-		for(HLProcess proc : getAllProcesses())
-		{
+		try {
 			if(aCurrentProcess!=null)
 			{
-				if(!proc.getProcessId().equals(aCurrentProcess.getProcessId()) && proc.isProcessAlive())
+				aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS);
+			}
+	
+			for(HLProcess proc : getAllProcesses())
+			{
+				if(aCurrentProcess!=null)
 				{
-					vProcesses.add(proc);
-				}
-			}
-			else
-			{
-				vProcesses.add(proc);
-			}
-		}
-		
-		if(aCurrentProcess!=null)
-		{
-			lShutdown_timeout_ms 	= aCurrentProcess.getShutdownTimeoutMs();
-		}
-		else if(getAllProcesses().length==1)
-		{
-			HLProcess onlyProcess 	= getAllProcesses()[0];
-			lShutdown_timeout_ms 	= onlyProcess.getShutdownTimeoutMs();
-			if(onlyProcess.isStarted())
-			{
-				onlyProcess.terminateProcess();
-			}
-		}
-		
-		int iActiveProcess = 1;
-		while(iActiveProcess>0)
-		{
-			iActiveProcess = 0;
-			for(HLProcess proc : vProcesses)
-			{
-				if(proc.isProcessAlive())
-				{
-					if(!proc.getProcessId().equals(terminatingProcess.getProcessId()))
+					if(!proc.getProcessId().equals(aCurrentProcess.getProcessId()) && proc.isProcessAlive())
 					{
-						iActiveProcess++;
+						vProcesses.add(proc);
 					}
 				}
 				else
 				{
-					if(!proc.isTerminated())
-					{
-						proc.setCurProcessState(ProcessState.TERMINATED);
-					}
+					vProcesses.add(proc);
 				}
 			}
 			
-			lShutdownElapsed = System.currentTimeMillis() - lStart;
-			
-			if(iActiveProcess>0 && (System.currentTimeMillis()-lLast_notification_ms>=1000))
+			if(aCurrentProcess!=null)
 			{
-				lLast_notification_ms = System.currentTimeMillis();
-				System.out.println("[Termination] Waiting "+iActiveProcess+" processes ... "+HLProcess.milisec2Words(lShutdownElapsed));
+				lShutdown_timeout_ms 	= aCurrentProcess.getShutdownTimeoutMs();
+			}
+			else if(getAllProcesses().length==1)
+			{
+				HLProcess onlyProcess 	= getAllProcesses()[0];
+				lShutdown_timeout_ms 	= onlyProcess.getShutdownTimeoutMs();
+				if(!onlyProcess.isTerminating())
+				{
+					onlyProcess.terminateProcess();
+				}
+			}
+			
+			int iActiveProcess = 1;
+			while(iActiveProcess>0)
+			{
+				iActiveProcess = 0;
 				for(HLProcess proc : vProcesses)
 				{
 					if(proc.isProcessAlive())
 					{
-						System.out.println("   - "+proc.getProcessId()+" : "+proc.getCurProcessState());
+						if(!proc.getProcessId().equals(terminatingProcess.getProcessId()))
+						{
+							iActiveProcess++;
+						}
+					}
+					else
+					{
+						if(!proc.isTerminated())
+						{
+							proc.setCurProcessState(ProcessState.TERMINATED);
+						}
 					}
 				}
-			}
-			
-			if(lShutdown_timeout_ms>0)
-			{	
-				if(lShutdownElapsed >= lShutdown_timeout_ms)
+				
+				lShutdownElapsed = System.currentTimeMillis() - lStart;
+				
+				if(iActiveProcess>0 && (System.currentTimeMillis()-lLast_notification_ms>=1000))
 				{
-					//kill all 
-					StringBuffer sb = new StringBuffer();
-					
-					sb.append("[Termination] Shutdown timeout - ").append(lShutdown_timeout_ms).append("ms, processes pending termination:");
-					
-					int i = 1;
-					for(HLProcess proc : getAllProcesses())
+					lLast_notification_ms = System.currentTimeMillis();
+					System.out.println("[Termination] Waiting "+iActiveProcess+" processes ... "+HLProcess.milisec2Words(lShutdownElapsed));
+					for(HLProcess proc : vProcesses)
 					{
 						if(proc.isProcessAlive())
 						{
-							sb.append("\n ").append(i++).append(". [").append(proc.getProcessId()).append("]:").append(proc.getProcessCommand());
+							System.out.println("   - "+proc.getProcessId()+" : "+proc.getCurProcessState());
 						}
 					}
-					
-					if(aCurrentProcess!=null)
+				}
+				
+				if(lShutdown_timeout_ms>0)
+				{	
+					if(lShutdownElapsed >= lShutdown_timeout_ms)
 					{
-						aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS_TIMEOUT);
+						//kill all 
+						StringBuffer sb = new StringBuffer();
+						
+						sb.append("[Termination] Shutdown timeout - ").append(lShutdown_timeout_ms).append("ms, processes pending termination:");
+						
+						int i = 1;
+						for(HLProcess proc : getAllProcesses())
+						{
+							if(proc.isProcessAlive())
+							{
+								sb.append("\n ").append(i++).append(". [").append(proc.getProcessId()).append("]:").append(proc.getProcessCommand());
+							}
+						}
+						
+						if(aCurrentProcess!=null)
+						{
+							aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS_TIMEOUT);
+						}
+		
+						//logger.log(Level.WARNING, sb.toString());
+						System.out.println(sb.toString());
+						System.out.println("[Termination] execute 'System.exit(1)'");
+						if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
+						{
+							aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
+						}
+						printProcessLifeCycle();
+						System.exit(1);
 					}
-	
-					//logger.log(Level.WARNING, sb.toString());
-					System.out.println(sb.toString());
-					System.out.println("[Termination] execute 'System.exit(1)'");
-					if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
-					{
-						aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
-					}
-					printProcessLifeCycle();
-					System.exit(1);
+				}
+				
+				///////
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			}
-			
-			///////
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+			if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
+			{
+				aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
 			}
-		}
-		if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
+		}finally
 		{
-			aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
+			//logger.log(Level.INFO, "All processes terminated");
+			System.out.println("[Termination] All processes terminated");
+			System.out.println("[Termination] terminating process : "+terminatingProcess.getProcessId());
+			printProcessLifeCycle();
 		}
-		//logger.log(Level.INFO, "All processes terminated");
-		System.out.println("[Termination] All processes terminated");
-		System.out.println("[Termination] terminating process : "+terminatingProcess.getProcessId());
-		printProcessLifeCycle();
 	}
 	
 	private void printProcessLifeCycle()
@@ -246,13 +250,18 @@ public class HLProcessMgr
 	}
 	
 	public synchronized void terminateAllProcesses()
-	{
+	{		
 		for(HLProcess p : procConfig.getProcesses())
 		{
 			if(!p.isRemoteRef())
 			{
-				if(!p.isTerminating())
+				if(terminatingProcess.getProcessId().equals(p.getProcessId()))
 				{
+					p.setCurProcessState(ProcessState.STOPPING);
+				}
+				else if(!p.isTerminating())
+				{
+					System.out.println("[DEBUG] Terminating "+p.getProcessId()+" ... "+p.getCurProcessState().toString());
 					p.terminateProcess();
 				}
 			}
