@@ -25,6 +25,7 @@ public class HLProcessConfig {
 	//-- SHELL
 	public static String _PROP_KEY_SHELL				= "shell.";
 	public static String _PROP_KEY_SHELL_COMMAND	 	= _PROP_KEY_SHELL+"command.{os.name}";
+	public static String _PROP_KEY_SHELL_COMMAND_END_REGEX 	= _PROP_KEY_SHELL+"command.end.regex";
 	public static String _PROP_KEY_SHELL_CMD_BLOCK		= _PROP_KEY_SHELL+"command.block";
 	
 	public static String _PROP_KEY_SHELL_START_DELAY	= _PROP_KEY_SHELL+"start.delay.ms";
@@ -34,6 +35,9 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_SHELL_DEF2_SCRIPT_DIR = _PROP_KEY_SHELL+"default.to.script.dir";
 	
 	public static String _PROP_KEY_SHELL_TERMINATE_CMD	= _PROP_KEY_SHELL+"terminate.command.{os.name}";
+	public static String _PROP_KEY_SHELL_TERMINATE_END_REGEX		= _PROP_KEY_SHELL+"terminate.end.regex";
+	public static String _PROP_KEY_SHELL_TERMINATE_IDLE_TIMEOUT_MS	= _PROP_KEY_SHELL+"idle.timeout.ms";
+	
 	public static String _PROP_KEY_SHELL_SHUTDOWN_ALL_ON_TEMINATE 	= _PROP_KEY_SHELL+"shutdown.all.on.termination";
 	public static String _PROP_KEY_SHELL_SHUTDOWN_ALL_TIMEOUT_MS 	= _PROP_KEY_SHELL+"shutdown.all.timeout.ms";
 
@@ -290,6 +294,12 @@ public class HLProcessConfig {
 			{
 				p.setProcessCommand(splitCommands(p, sConfigVal));
 			}
+			// 
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_COMMAND_END_REGEX);
+			if(sConfigVal!=null)
+			{
+				p.setCommandEndRegex(sConfigVal);
+			}
 			//
 			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_OUTPUT_CONSOLE);
 			if(sConfigVal!=null)
@@ -313,7 +323,19 @@ public class HLProcessConfig {
 			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_TERMINATE_CMD);
 			if(sConfigVal!=null)
 			{
-				p.setTerminatedCommand(sConfigVal);
+				p.setTerminateCommand(sConfigVal);
+			}
+			//
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_TERMINATE_END_REGEX);
+			if(sConfigVal!=null)
+			{
+				p.setTerminateEndRegex(sConfigVal);
+			}
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_TERMINATE_IDLE_TIMEOUT_MS);
+			if(sConfigVal!=null)
+			{
+				long lVal = Long.parseLong(sConfigVal);
+				p.setTerminateIdleTimeoutMs(lVal);
 			}
 			//
 			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_SHUTDOWN_ALL_ON_TEMINATE);
@@ -474,15 +496,22 @@ public class HLProcessConfig {
 	# process.@.shell.start.delay.ms=
 	# process.@.shell.runas.daemon=false
 	# process.@.shell.default.to.script.dir=false
+	
 	# process.@.shell.command.block=
+	# process.@.shell.command.end.regex=
 	# process.@.shell.command.win=
 	# process.@.shell.command.linux=
 	# process.@.shell.command.mac=
+	
 	# process.@.shell.output.filename=
 	# process.@.shell.output.console=false
+	
 	# process.@.shell.terminate.command.win=
 	# process.@.shell.terminate.command.linux=
 	# process.@.shell.terminate.command.mac=
+	# process.@.shell.terminate.end.regex=
+	# process.@.shell.terminate.idle.timeout.ms=18000000 (5 min)
+
 	# process.@.shell.shutdown.all.on.termination=false
 	# process.@.shell.shutdown.all.timeout.ms=30000
 	#

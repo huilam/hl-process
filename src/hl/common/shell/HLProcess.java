@@ -13,8 +13,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -22,6 +20,13 @@ import java.util.regex.Pattern;
 
 public class HLProcess implements Runnable
 {
+	private final static String _VERSION = "HLProcess alpha v0.56";
+	
+	private final static long _SEC_ms 	= 1000;
+	private final static long _MIN_ms 	= 60 * _SEC_ms;
+	private final static long _HOUR_ms 	= 60 * _MIN_ms;
+	private final static long _DAY_ms 	= 24 * _HOUR_ms;
+	
 	public static enum ProcessState 
 	{ 
 		IDLE(0), 
@@ -51,6 +56,10 @@ public class HLProcess implements Runnable
 		public boolean isBefore(ProcessState aProcessState)
 		{
 			return getCode() < aProcessState.getCode();
+		}
+		public boolean isAfter(ProcessState aProcessState)
+		{
+			return getCode() > aProcessState.getCode();
 		}
 		public boolean isAtLeast(ProcessState aProcessState)
 		{
@@ -82,8 +91,12 @@ public class HLProcess implements Runnable
 	private String command_block_start	= "";
 	private String command_block_end	= "";
 	
-	private String[] commands			= null;
-	private String terminated_command  	= null;
+	private String[] commands				= null;
+	private String command_end_regex		= null;
+	private String terminate_command  		= null;
+	private String terminate_end_regex		= null;
+	private long terminate_idle_timeout_ms	= 5 * _MIN_ms;
+	
 	private boolean runas_daemon		= false;
 	private boolean disabled			= false;
 
@@ -100,13 +113,19 @@ public class HLProcess implements Runnable
 	private HLProcessEvent listener		= null; 
 	
 	public static Logger logger 		= Logger.getLogger(HLProcess.class.getName());
+
 	
 	public HLProcess(String aId, String[] aShellCmd)
 	{
 		this.commands = aShellCmd;
 		init(aId);
 	}
-
+	
+	public static String getVersion()
+	{
+		return _VERSION;
+	}
+	
 	public HLProcess(String aId)
 	{
 		init(aId);
@@ -118,11 +137,6 @@ public class HLProcess implements Runnable
 		stateMap.clear();
 		setCurProcessState(ProcessState.IDLE);
 	}
-	
-	public static String getVersion()
-	{
-		return "HLProcess alpha v0.54";
-	}
 
 	public void setCommandBlockStart(String aBlockSeparator)
 	{
@@ -133,6 +147,16 @@ public class HLProcess implements Runnable
 	{
 		return this.command_block_start;
 	}
+	
+	public void setCommandEndRegex(String aEndRegex)
+	{
+		this.command_end_regex = aEndRegex;
+	}
+	
+	public String getCommandEndRegex()
+	{
+		return this.command_end_regex;
+	}	
 	
 	public void setCommandBlockEnd(String aBlockSeparator)
 	{
@@ -155,15 +179,35 @@ public class HLProcess implements Runnable
 		this.commands = aShellCmdList.toArray(new String[aShellCmdList.size()]);
 	}
 
-	public void setTerminatedCommand(String aShellCommand)
+	public void setTerminateCommand(String aShellCommand)
 	{
-		this.terminated_command = aShellCommand;
+		this.terminate_command = aShellCommand;
 	}
 	
-	public String getTerminatedCommand()
+	public String getTerminateCommand()
 	{
-		return terminated_command;
+		return terminate_command;
 	}
+	
+	public void setTerminateEndRegex(String aRegex)
+	{
+		this.terminate_end_regex = aRegex;
+	}
+	
+	public String getTerminateEndRegex()
+	{
+		return terminate_end_regex;
+	}	
+	
+	public void setTerminateIdleTimeoutMs(long aTimeoutMs)
+	{
+		this.terminate_idle_timeout_ms = aTimeoutMs;
+	}
+	
+	public long getTerminateIdleTimeoutMs()
+	{
+		return terminate_idle_timeout_ms;
+	}	
 	
 	public void setProcessId(String aId)
 	{
@@ -383,6 +427,11 @@ public class HLProcess implements Runnable
 		return getCurProcessState().is(ProcessState.TERMINATED);
 	}
 	
+	public boolean isTerminating()
+	{
+		return getCurProcessState().isAfter(ProcessState.STARTED);
+	}
+	
 	public boolean isProcessAlive()
 	{
 		return (proc!=null && proc.isAlive()) || (thread!=null && thread.isAlive());
@@ -390,14 +439,19 @@ public class HLProcess implements Runnable
 	
 	public boolean isStarted()
 	{
-		return this.run_start_timestamp>0;
+		return this.run_start_timestamp>0 && getCurProcessState().isAtLeast(ProcessState.STARTED);
 	}
-	
-	public boolean isInitSuccess()
+
+	public boolean isNotStarting()
 	{
-		return this.is_init_success;
+		return getCurProcessState().isBefore(ProcessState.STARTING);
 	}
-	
+
+	public boolean isNotStarted()
+	{
+		return getCurProcessState().isBefore(ProcessState.STARTED);
+	}
+		
 	private void logDebug(String aMsg)
 	{
 		logger.log(Level.FINEST, aMsg);
@@ -421,14 +475,17 @@ public class HLProcess implements Runnable
 		return new File(sScript);
 	}
 	
-	private void checkDependenciesB4Start()
+	private boolean checkDependenciesB4Start()
 	{
+		boolean isWaitDepOk = true;
 		String sPrefix = (id==null?"":"["+id+"] ");
 		
-		if(depends!=null && depends.size()>0)
+		if(depends!=null && depends.size()>0 && isNotStarted())
 		{
+			setCurProcessState(ProcessState.START_WAIT_DEP);
 			logger.log(Level.INFO, 
-					sPrefix + "wait_dependances ...");
+					sPrefix + "wait_dependances ... "+depends.size());
+
 
 			Collection<HLProcess> tmpDepends = new ArrayList<HLProcess>();
 			tmpDepends.addAll(depends);
@@ -436,7 +493,7 @@ public class HLProcess implements Runnable
 			boolean isDependTimeOut = (this.dep_wait_timeout_ms>0);
 			StringBuffer sbDepCmd = new StringBuffer();
 			
-			setCurProcessState(ProcessState.START_WAIT_DEP);
+			
 			while(tmpDepends.size()>0 && ProcessState.START_WAIT_DEP.is(getCurProcessState()))
 			{
 				sbDepCmd.setLength(0);
@@ -447,17 +504,19 @@ public class HLProcess implements Runnable
 				{
 					HLProcess d = iter.next();
 					
-					if(d.isInitSuccess())
+					if(d.isStarted())
 					{
 						iter.remove();
 						continue;
 					}
-					else if(d.getCurProcessState().isAtLeast(ProcessState.STOPPING))
+					else if(d.isTerminating())
 					{
 						String sErr = sPrefix+"Dependance process(es) failed to start ! "+sbDepCmd.toString();
 						logger.log(Level.SEVERE, sErr);
+						isWaitDepOk = false;
 						setCurProcessState(ProcessState.START_WAIT_DEP_FAILED);
 						onProcessError(this, new Exception(sErr));
+						break;
 					}
 					else
 					{
@@ -473,8 +532,10 @@ public class HLProcess implements Runnable
 					{
 						String sErr = sPrefix+"Dependance process(es) init timeout ! "+this.dep_wait_timeout_ms+"ms : "+sbDepCmd.toString();
 						logger.log(Level.SEVERE, sErr);
-						setCurProcessState(ProcessState.START_INIT_FAILED);
+						isWaitDepOk = false;
+						setCurProcessState(ProcessState.START_WAIT_DEP_TIMEOUT);
 						onProcessError(this, new Exception(sErr));
+						break;
 					}
 				}
 				
@@ -486,7 +547,8 @@ public class HLProcess implements Runnable
 				}
 			}
 		}
-				
+		
+		return isWaitDepOk;
 	}
 	
 	protected static ProcessBuilder initProcessBuilder(final String aCommands[], boolean isDefToScriptDir)
@@ -512,184 +574,209 @@ public class HLProcess implements Runnable
 		return pb;
 	}
 	
-	public void run() {
-		
-		this.run_start_timestamp = System.currentTimeMillis();
-		setCurProcessState(ProcessState.STARTING);
-		
+	public void run() {		
 		String sPrefix = (id==null?"":"["+id+"] ");
-		
-		logger.log(Level.INFO, sPrefix+"start - "+getProcessId());
 		try {
-			checkDependenciesB4Start();
-			
-			if(getCurProcessState().isBefore(ProcessState.STARTED))
+			if(isNotStarting())
 			{
-				ProcessBuilder pb = initProcessBuilder(this.commands, this.is_def_script_dir);
-				try {
-					proc = pb.start();
-				} catch (IOException e1) {
-					onProcessError(this, e1);
-				}
+				onProcessStarting(this);
+				logger.log(Level.INFO, sPrefix+"start - "+getProcessId());
+				boolean isDepOk = checkDependenciesB4Start();
 				
-				onProcessStart(this);
-				long lStart = System.currentTimeMillis();
-				BufferedReader rdr = null;
-				BufferedWriter wrt = null;
-				
-				SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
-				
-				if(proc!=null)
+				if(isNotStarted() && isDepOk)
 				{
+					ProcessBuilder pb = initProcessBuilder(this.commands, this.is_def_script_dir);
 					try {
-						rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-						
-						if(this.output_filename!=null)
-						{
-							if(this.output_filename.trim().length()>0)
+						proc = pb.start();
+					} catch (IOException e1) {
+						onProcessError(this, e1);
+					}
+					setCurProcessState(ProcessState.START_INIT);
+					
+					long lStart = System.currentTimeMillis();
+					BufferedReader rdr = null;
+					BufferedWriter wrt = null;
+					
+					SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
+					
+					if(proc!=null)
+					{
+						try {
+							rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+							
+							if(this.output_filename!=null)
 							{
-								File fileOutput = new File(this.output_filename);
-								if(!fileOutput.exists())
+								if(this.output_filename.trim().length()>0)
 								{
-									if(fileOutput.getParentFile()!=null)
+									File fileOutput = new File(this.output_filename);
+									if(!fileOutput.exists())
 									{
-										fileOutput.getParentFile().mkdirs();
-									}
-								}
-								
-								wrt = new BufferedWriter(new FileWriter(fileOutput, true));
-							}
-						}
-						
-						String sLine = null;
-						
-						if(rdr.ready())
-							sLine = rdr.readLine();
-						
-						String sDebugLine = null;
-						
-						while(proc.isAlive() || sLine!=null)
-						{
-		
-							if(sLine!=null)
-							{
-								sDebugLine = sPrefix + df.format(System.currentTimeMillis()) + sLine;
-		
-								if(wrt!=null)
-								{
-									wrt.write(sDebugLine);
-									wrt.newLine();
-									wrt.flush();
-								}
-								
-								if(this.is_output_console)
-								{
-									System.out.println(sLine);
-								}
-								
-								logDebug(sDebugLine);
-								
-								if(sLine.length()>0)
-								{
-									if(!this.is_init_failed && this.patt_init_failed!=null)
-									{
-										Matcher m = this.patt_init_failed.matcher(sLine);
-										this.is_init_failed =  m.find();
-										if(this.is_init_failed)
+										if(fileOutput.getParentFile()!=null)
 										{
-											String sErr = sPrefix + "init_error - Elapsed: "+milisec2Words(System.currentTimeMillis()-this.run_start_timestamp);
-											logger.log(Level.SEVERE, sErr);
-											setCurProcessState(ProcessState.START_INIT_FAILED);
-											onProcessError(this, new Exception(sErr));
-											break;
+											fileOutput.getParentFile().mkdirs();
 										}
 									}
-								
-									if(!this.is_init_success)
+									
+									wrt = new BufferedWriter(new FileWriter(fileOutput, true));
+								}
+							}
+							
+							String sLine = null;
+							
+							if(rdr.ready())
+								sLine = rdr.readLine();
+							
+							String sDebugLine = null;
+							
+							Pattern pattCmdEnd = null;
+							
+							String sCmdEndRegex = getCommandEndRegex();
+							if(sCmdEndRegex!=null && sCmdEndRegex.trim().length()>0)
+							{
+								pattCmdEnd = Pattern.compile(sCmdEndRegex);
+							}
+							
+							while(proc.isAlive() || sLine!=null)
+							{
+			
+								if(sLine!=null)
+								{
+									sDebugLine = sPrefix + df.format(System.currentTimeMillis()) + sLine;
+			
+									if(wrt!=null)
 									{
-										if(this.patt_init_success!=null)
+										wrt.write(sDebugLine);
+										wrt.newLine();
+										wrt.flush();
+									}
+									
+									if(this.is_output_console)
+									{
+										System.out.println(sLine);
+									}
+									
+									logDebug(sDebugLine);
+									
+									if(sLine.length()>0 && isNotStarted())
+									{
+										if(pattCmdEnd!=null)
 										{
-											Matcher m = this.patt_init_success.matcher(sLine);
-											this.is_init_success = m.find();
-											if(this.is_init_success)
+											Matcher m = pattCmdEnd.matcher(sLine);
+											if(m.find())
 											{
-												setCurProcessState(ProcessState.STARTED);
-												logger.log(Level.INFO, 
-														sPrefix + "init_success - Elapsed: "+milisec2Words(System.currentTimeMillis()-this.run_start_timestamp));
+												break;
+											}
+										}
+										
+										if(!this.is_init_failed && this.patt_init_failed!=null)
+										{
+											Matcher m = this.patt_init_failed.matcher(sLine);
+											this.is_init_failed =  m.find();
+											if(this.is_init_failed)
+											{
+												String sErr = sPrefix + "init_error - Elapsed: "+milisec2Words(System.currentTimeMillis()-this.run_start_timestamp);
+												logger.log(Level.SEVERE, sErr);
+												setCurProcessState(ProcessState.START_INIT_FAILED);
+												onProcessError(this, new Exception(sErr));
+												break;
+											}
+										}
+									
+										if(!this.is_init_success)
+										{
+											if(this.patt_init_success!=null)
+											{
+												Matcher m = this.patt_init_success.matcher(sLine);
+												this.is_init_success = m.find();
+												if(this.is_init_success)
+												{
+													onProcessInitSuccess(this);
+													logger.log(Level.INFO, 
+															sPrefix + "init_success - Elapsed: "+milisec2Words(System.currentTimeMillis()-this.run_start_timestamp));
+												}
 											}
 										}
 									}
 								}
-							}
-							else
-							{
-								
-								try {
-									//let the process rest awhile when no output
-									Thread.sleep(100);
-								} catch (InterruptedException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-									onProcessError(this,e);
-									break;
-								}
-							}
-							
-							if(!this.is_init_success)
-							{
-								if(this.init_timeout_ms>0)
+								else
 								{
-									long lElapsed = System.currentTimeMillis() - lStart;
-									if(lElapsed>=this.init_timeout_ms)
-									{
-										String sErr = sPrefix+"Init timeout ! "+milisec2Words(lElapsed)+" - "+getProcessCommand();
-										this.is_init_success = false;
-										logger.log(Level.SEVERE, sErr);
-										setCurProcessState(ProcessState.START_INIT_TIMEOUT);
-										onProcessError(this, new Exception(sErr));
+									
+									try {
+										//let the process rest awhile when no output
+										Thread.sleep(100);
+									} catch (InterruptedException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+										onProcessError(this,e);
 										break;
 									}
 								}
 								
-								if(this.patt_init_success==null)
+								if(!this.is_init_success && isNotStarted())
 								{
-									this.is_init_success = true;
-									setCurProcessState(ProcessState.STARTED);
+									if(this.init_timeout_ms>0)
+									{
+										long lElapsed = System.currentTimeMillis() - lStart;
+										if(lElapsed>=this.init_timeout_ms)
+										{
+											String sErr = sPrefix+"Init timeout ! "+milisec2Words(lElapsed)+" - "+getProcessCommand();
+											this.is_init_success = false;
+											logger.log(Level.SEVERE, sErr);
+											setCurProcessState(ProcessState.START_INIT_TIMEOUT);
+											onProcessError(this, new Exception(sErr));
+											break;
+										}
+									}
+									
+									if(this.patt_init_success==null && isNotStarted())
+									{
+										this.is_init_success = true;
+										onProcessInitSuccess(this);
+									}
+								}
+								
+								sLine = null;
+								if(rdr.ready())
+								{
+									sLine = rdr.readLine();
 								}
 							}
 							
-							sLine = null;
-							if(rdr.ready())
+						} catch (Throwable e) {
+							if(getCurProcessState().isBefore(ProcessState.STOPPING))
 							{
-								sLine = rdr.readLine();
+								setCurProcessState(ProcessState.STOPPING);
 							}
+							this.exit_value = -1;
+							logger.log(Level.SEVERE, e.getMessage(), e);
+							onProcessError(this, e);
 						}
-					} catch (Throwable e) {
-						setCurProcessState(ProcessState.STOPPING);
-						this.exit_value = -1;
-						logger.log(Level.SEVERE, e.getMessage(), e);
-						onProcessError(this, e);
-					}
-					finally
-					{
-						if(wrt!=null)
+						finally
 						{
-							try {
-								wrt.flush();
-								wrt.close();
-							} catch (IOException e) {
+							if(getCurProcessState().isBefore(ProcessState.STOPPING))
+							{
+								setCurProcessState(ProcessState.STOPPING);
+							}
+							
+							if(wrt!=null)
+							{
+								try {
+									wrt.flush();
+									wrt.close();
+								} catch (IOException e) {
+								}
+							}
+							//
+							if(rdr!=null)
+							{
+								try {
+									rdr.close();
+								} catch (IOException e) {
+								}
 							}
 						}
-						//
-						if(rdr!=null)
-						{
-							try {
-								rdr.close();
-							} catch (IOException e) {
-							}
-						}
-					}
-				}			
+					}			
+				}
 			}
 		}
 		finally
@@ -714,15 +801,15 @@ public class HLProcess implements Runnable
 		{
 			this.is_exec_terminate_cmd = true;
 			String sPrefix = (id==null?"":id);
-			String sEndCmd = getTerminatedCommand();
+			String sEndCmd = getTerminateCommand();
 			if(sEndCmd!=null && sEndCmd.trim().length()>0)
 			{
 				try {
 					System.out.println("[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd);
 					
 					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);					
-					setCurProcessState(ProcessState.STOP_EXEC_CMD);
 					ProcessBuilder pb = initProcessBuilder(sSplitEndCmd, this.is_def_script_dir);
+					setCurProcessState(ProcessState.STOP_EXEC_CMD);
 					Process procTeminate = pb.start();
 					
 					BufferedReader rdr = null;
@@ -758,6 +845,15 @@ public class HLProcess implements Runnable
 						
 						String sDebugLine = null;
 						
+						String sEndRegex 		= getTerminateEndRegex();
+						Pattern pattEndRegex 	= null;
+						if(sEndRegex!=null && sEndRegex.trim().length()>0)
+						{
+							pattEndRegex = Pattern.compile(sEndRegex);
+						}
+						Matcher m = null;
+						long lIdleStartTimestamp = System.currentTimeMillis();
+						long lIdleTimeout = 5* _SEC_ms;
 						while(procTeminate.isAlive() || sLine!=null)
 						{
 							if(sLine!=null)
@@ -774,7 +870,20 @@ public class HLProcess implements Runnable
 								if(this.is_output_console)
 								{
 									System.out.println(sLine);
-								}					
+								}
+								
+								if(pattEndRegex!=null)
+								{
+									m = pattEndRegex.matcher(sLine);
+									if(m.find())
+									{
+										break;
+									}
+								}
+							}
+							else
+							{
+								lIdleStartTimestamp = System.currentTimeMillis();
 							}
 							
 							sLine = null;
@@ -782,6 +891,13 @@ public class HLProcess implements Runnable
 							{
 								sLine = rdr.readLine();
 							}
+							
+							if(System.currentTimeMillis()-lIdleStartTimestamp >= lIdleTimeout)
+							{
+								System.err.println("[Termination] Termination command killed due to idle timeout. - "+lIdleTimeout+"ms");
+								break;
+							}
+							
 						}
 					}
 					finally
@@ -827,10 +943,19 @@ public class HLProcess implements Runnable
 		this.listener = event;
 	}
 
-	private void onProcessStart(HLProcess aHLProcess)
+	private void onProcessInitSuccess(HLProcess aHLProcess)
 	{
+		setCurProcessState(ProcessState.STARTED);
 		if(this.listener!=null)
-			listener.onProcessStart(aHLProcess);
+			listener.onProcessInitSuccess(aHLProcess);
+	}
+	private void onProcessStarting(HLProcess aHLProcess)
+	{
+		this.run_start_timestamp = System.currentTimeMillis();
+		setCurProcessState(ProcessState.STARTING);
+
+		if(this.listener!=null)
+			listener.onProcessStarting(aHLProcess);
 	}
 	private void onProcessError(HLProcess aHLProcess, Throwable e)
 	{
@@ -845,17 +970,21 @@ public class HLProcess implements Runnable
 	
 	public Thread startProcess()
 	{
-		setCurProcessState(ProcessState.STARTING);
-		thread = new Thread(this);
-		thread.setDaemon(isRunAsDaemon());
-		thread.start();
+		if(thread==null)
+		{
+			thread = new Thread(this);
+			thread.setDaemon(isRunAsDaemon());
+			thread.start();
+		}
 		return thread;
 	}
 	
 	public void terminateProcess()
 	{
-		setCurProcessState(ProcessState.STOPPING);
-		executeTerminateCmd();
+		if(getCurProcessState().isBefore(ProcessState.STOPPING))
+		{
+			setCurProcessState(ProcessState.STOPPING);
+		}
 	}
 	
 	public static String milisec2Words(long aElapsed)
@@ -863,33 +992,28 @@ public class HLProcess implements Runnable
 		StringBuffer sb = new StringBuffer();
 		long lTmp = aElapsed;
 		
-		long _sec 	= 1000;
-		long _min 	= _sec*60;
-		long _hour 	= _min*60;
-		long _day 	= _hour*24;
-		
-		if(lTmp>=_day) //24 hours
+		if(lTmp>=_DAY_ms) //24 hours
 		{
-			sb.append(lTmp / _day).append("d ");
-			lTmp = lTmp % _day;
+			sb.append(lTmp / _DAY_ms).append("d ");
+			lTmp = lTmp % _DAY_ms;
 		}
 		
-		if(lTmp>=_hour)
+		if(lTmp>=_HOUR_ms)
 		{
-			sb.append(lTmp / _hour).append("h ");
-			lTmp = lTmp % _hour;
+			sb.append(lTmp / _HOUR_ms).append("h ");
+			lTmp = lTmp % _HOUR_ms;
 		}
 		
-		if(lTmp>=_min)
+		if(lTmp>=_MIN_ms)
 		{
-			sb.append(lTmp / _min).append("m ");
-			lTmp = lTmp % _min;
+			sb.append(lTmp / _MIN_ms).append("m ");
+			lTmp = lTmp % _MIN_ms;
 		}
 		
-		if(lTmp>=_sec)
+		if(lTmp>=_SEC_ms)
 		{
-			sb.append(lTmp / _sec).append("s ");
-			lTmp = lTmp % _sec;
+			sb.append(lTmp / _SEC_ms).append("s ");
+			lTmp = lTmp % _SEC_ms;
 		}
 		
 		if(lTmp>0)
@@ -921,17 +1045,17 @@ public class HLProcess implements Runnable
 				
 				///
 				Long lElapseMs = 0L;
-				if(i==0)
+				if(s.is(ProcessState.IDLE))
 				{
 					sbState.append(" (").append(df.format(arrStartTimes[i])).append(")");
 				}
-				else if(i>=arrStates.length-1)
+				else if(i<arrStates.length-1)
 				{
-					lElapseMs = System.currentTimeMillis()-arrStartTimes[i];
+					lElapseMs = arrStartTimes[i+1]-arrStartTimes[i];
 				}
 				else
 				{
-					lElapseMs = arrStartTimes[i]-arrStartTimes[i-1];
+					lElapseMs = System.currentTimeMillis()-arrStartTimes[i];
 				}
 				
 				if(lElapseMs!=null && lElapseMs>0)
@@ -955,11 +1079,13 @@ public class HLProcess implements Runnable
 		sb.append("\n").append(sPrefix).append("runtime.state.lifecycle=").append(getProcessStateHist());
 
 		sb.append("\n").append(sPrefix).append("process.command.").append(HLProcessConfig.osname).append("=").append(getProcessCommand());
-		sb.append("\n").append(sPrefix).append("process.runas.darmon=").append(isRunAsDaemon());
+		sb.append("\n").append(sPrefix).append("process.runas.daemon=").append(isRunAsDaemon());
 		sb.append("\n").append(sPrefix).append("process.command.block.start=").append(getCommandBlockStart());
 		sb.append("\n").append(sPrefix).append("process.command.block.end=").append(getCommandBlockEnd());
 		sb.append("\n").append(sPrefix).append("process.start.delay.ms=").append(getProcessStartDelayMs());
-		sb.append("\n").append(sPrefix).append("process.terminate.cmd=").append(getTerminatedCommand());
+		sb.append("\n").append(sPrefix).append("process.terminate.cmd=").append(getTerminateCommand());
+		sb.append("\n").append(sPrefix).append("process.terminate.end.regex=").append(getTerminateCommand());
+		
 		sb.append("\n").append(sPrefix).append("process.shutdown.all.on.termination=").append(isShutdownAllOnTermination());
 		sb.append("\n").append(sPrefix).append("process.shutdown.all.timeout.ms=").append(isShutdownAllOnTermination());
 		

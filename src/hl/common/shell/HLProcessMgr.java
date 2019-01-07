@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 
 import hl.common.shell.HLProcess;
 import hl.common.shell.HLProcessConfig;
+import hl.common.shell.HLProcess.ProcessState;
 
 public class HLProcessMgr
 {
@@ -24,7 +25,6 @@ public class HLProcessMgr
 			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 				@Override
 				public void run() {
-					
 					if(terminatingProcess==null)
 					{
 						System.out.println("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
@@ -48,14 +48,18 @@ public class HLProcessMgr
 			
 			event = new HLProcessEvent()
 					{
-						public void onProcessStart(HLProcess p) {
+						public void onProcessStarting(HLProcess p) {
 						}
 						
 						public void onProcessError(HLProcess p, Throwable e) {
 						}
 
+						public void onProcessInitSuccess(HLProcess p) {
+						}
+						
 						public void onProcessTerminate(HLProcess p) 
 						{
+							is_terminating = true;
 							if(p!=null)
 							{
 								if(p.isShutdownAllOnTermination() && terminatingProcess==null)
@@ -81,6 +85,11 @@ public class HLProcessMgr
 		long lLast_notification_ms 	= 0;
 		Vector<HLProcess> vProcesses = new Vector<HLProcess>();
 		
+		if(aCurrentProcess!=null)
+		{
+			aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS);
+		}
+
 		for(HLProcess proc : getAllProcesses())
 		{
 			if(aCurrentProcess!=null)
@@ -104,7 +113,7 @@ public class HLProcessMgr
 		{
 			HLProcess onlyProcess 	= getAllProcesses()[0];
 			lShutdown_timeout_ms 	= onlyProcess.getShutdownTimeoutMs();
-			if(onlyProcess.getCurProcessState().isBefore(HLProcess.ProcessState.STOPPING))
+			if(onlyProcess.isStarted())
 			{
 				onlyProcess.terminateProcess();
 			}
@@ -118,7 +127,17 @@ public class HLProcessMgr
 			{
 				if(proc.isProcessAlive())
 				{
-					iActiveProcess++;
+					if(!proc.getProcessId().equals(terminatingProcess.getProcessId()))
+					{
+						iActiveProcess++;
+					}
+				}
+				else
+				{
+					if(!proc.isTerminated())
+					{
+						proc.setCurProcessState(ProcessState.TERMINATED);
+					}
 				}
 			}
 			
@@ -154,10 +173,19 @@ public class HLProcessMgr
 							sb.append("\n ").append(i++).append(". [").append(proc.getProcessId()).append("]:").append(proc.getProcessCommand());
 						}
 					}
+					
+					if(aCurrentProcess!=null)
+					{
+						aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS_TIMEOUT);
+					}
 	
 					//logger.log(Level.WARNING, sb.toString());
 					System.out.println(sb.toString());
 					System.out.println("[Termination] execute 'System.exit(1)'");
+					if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
+					{
+						aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
+					}
 					printProcessLifeCycle();
 					System.exit(1);
 				}
@@ -170,8 +198,13 @@ public class HLProcessMgr
 				e.printStackTrace();
 			}
 		}
+		if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
+		{
+			aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
+		}
 		//logger.log(Level.INFO, "All processes terminated");
 		System.out.println("[Termination] All processes terminated");
+		System.out.println("[Termination] terminating process : "+terminatingProcess.getProcessId());
 		printProcessLifeCycle();
 	}
 	
@@ -179,7 +212,9 @@ public class HLProcessMgr
 	{
 		for(HLProcess p : getAllProcesses())
 		{
-			System.out.println("[process.lifecycle] "+p.getProcessId()+" : "+p.getProcessStateHist());
+			String sRemote = p.isRemoteRef()?" (remote)":"";
+				
+			System.out.println("[process.lifecycle] "+p.getProcessId()+sRemote+" : "+p.getProcessStateHist());
 		}
 	}
 	
@@ -216,7 +251,10 @@ public class HLProcessMgr
 		{
 			if(!p.isRemoteRef())
 			{
-				p.terminateProcess();
+				if(!p.isTerminating())
+				{
+					p.terminateProcess();
+				}
 			}
 		}
 	}
@@ -228,10 +266,10 @@ public class HLProcessMgr
 	
 	private synchronized void startAllProcesses(long lSleepMs)
 	{
-		if(is_terminating)
+		if(this.is_terminating)
 			return;
 		
-		is_terminating = true;
+		this.is_terminating = false;
 		
 		long lStart = System.currentTimeMillis();
 		int lPendingStart = procConfig.getProcesses().length;
@@ -241,16 +279,15 @@ public class HLProcessMgr
 			for(HLProcess p : procConfig.getProcesses())
 			{
 				p.setEventListener(event);
-				if(p.isRemoteRef())
-				{
-					lPendingStart--;
-				}
-				else if(!p.isStarted())
+				if(p.isNotStarting() && p.isNotStarted())
 				{
 					long lElapsed = System.currentTimeMillis()-lStart;
 					if(lElapsed >= p.getProcessStartDelayMs())
 					{
-						p.startProcess(); 
+						if(!p.isRemoteRef())
+						{
+							p.startProcess();
+						}
 						lPendingStart--;
 					}
 				}
