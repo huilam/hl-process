@@ -795,10 +795,12 @@ public class HLProcess implements Runnable
 		}
 	}
 	
-	private void executeTerminateCmd()
+	private boolean executeTerminateCmd()
 	{
+		boolean isExecuted = false;
 		if(!this.is_exec_terminate_cmd && isStarted())
 		{
+			isExecuted = true;
 			this.is_exec_terminate_cmd = true;
 			String sPrefix = (id==null?"":id);
 			String sEndCmd = getTerminateCommand();
@@ -935,7 +937,8 @@ public class HLProcess implements Runnable
 					e.printStackTrace();
 				}
 			}
-		}		
+		}	
+		return isExecuted;
 	}
 	
 	public void setEventListener(HLProcessEvent event)
@@ -983,8 +986,10 @@ public class HLProcess implements Runnable
 	{
 		if(getCurProcessState().isBefore(ProcessState.STOPPING))
 		{
+			executeTerminateCmd();
 			setCurProcessState(ProcessState.STOPPING);
 		}
+		
 	}
 	
 	public static String milisec2Words(long aElapsed)
