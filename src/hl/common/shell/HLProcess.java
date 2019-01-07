@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 
 public class HLProcess implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.56";
+	private final static String _VERSION = "HLProcess alpha v0.57";
 	
 	private final static long _SEC_ms 	= 1000;
 	private final static long _MIN_ms 	= 60 * _SEC_ms;
@@ -93,6 +93,8 @@ public class HLProcess implements Runnable
 	
 	private String[] commands				= null;
 	private String command_end_regex		= null;
+	private long command_idle_timeout_ms	= 0;
+	
 	private String terminate_command  		= null;
 	private String terminate_end_regex		= null;
 	private long terminate_idle_timeout_ms	= 5 * _MIN_ms;
@@ -156,6 +158,16 @@ public class HLProcess implements Runnable
 	public String getCommandEndRegex()
 	{
 		return this.command_end_regex;
+	}	
+	
+	public void setCommandIdleTimeoutMs(long aTimeoutMs)
+	{
+		this.command_idle_timeout_ms = aTimeoutMs;
+	}
+	
+	public long getCommandIdleTimeoutMs()
+	{
+		return this.command_idle_timeout_ms;
 	}	
 	
 	public void setCommandBlockEnd(String aBlockSeparator)
@@ -622,19 +634,20 @@ public class HLProcess implements Runnable
 							}
 							
 							String sLine = null;
-							
-							if(rdr.ready())
-								sLine = rdr.readLine();
-							
-							String sDebugLine = null;
+							String sDebugLine = null;				
 							
 							Pattern pattCmdEnd = null;
-							
 							String sCmdEndRegex = getCommandEndRegex();
 							if(sCmdEndRegex!=null && sCmdEndRegex.trim().length()>0)
 							{
 								pattCmdEnd = Pattern.compile(sCmdEndRegex);
 							}
+							
+							if(rdr.ready())
+								sLine = rdr.readLine();
+							
+							long lIdleStartTimestamp 	= 0;
+							long lIdleTimeoutMs 		= getCommandIdleTimeoutMs();
 							
 							while(proc.isAlive() || sLine!=null)
 							{
@@ -717,7 +730,17 @@ public class HLProcess implements Runnable
 								}
 								else
 								{
-									
+									if(lIdleTimeoutMs>0)
+									{
+										long lIdleElapsed = System.currentTimeMillis() - lIdleStartTimestamp;
+										
+										if(lIdleElapsed >= lIdleTimeoutMs)
+										{
+											logger.log(Level.INFO, 
+													sPrefix + "idle_timeout - Elapsed: "+milisec2Words(lIdleElapsed));
+											break;
+										}
+									}
 									try {
 										//let the process rest awhile when no output
 										Thread.sleep(100);
@@ -732,6 +755,11 @@ public class HLProcess implements Runnable
 								if(rdr.ready())
 								{
 									sLine = rdr.readLine();
+								}
+								
+								if(sLine==null)
+								{
+									lIdleStartTimestamp = System.currentTimeMillis();
 								}
 							}
 							
@@ -799,151 +827,19 @@ public class HLProcess implements Runnable
 			String sEndCmd = getTerminateCommand();
 			if(sEndCmd!=null && sEndCmd.trim().length()>0)
 			{
-				try {
-					SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
-					sPrefix = (id==null?"":"["+id+"] ");
-					
-					System.out.println("[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd);
-					
-					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);					
-					ProcessBuilder pb = initProcessBuilder(sSplitEndCmd, this.is_def_script_dir);
-					
-					BufferedReader rdr = null;
-					BufferedWriter wrt = null;
-					
-					setCurProcessState(ProcessState.STOP_EXEC_CMD);
-					Process procTeminate = pb.start();
-					
-					try {
-						rdr = new BufferedReader(new InputStreamReader(procTeminate.getInputStream()));
-						
-						if(this.output_filename!=null)
-						{
-							if(this.output_filename.trim().length()>0)
-							{
-								File fileOutput = new File(this.output_filename);
-								if(!fileOutput.exists())
-								{
-									if(fileOutput.getParentFile()!=null)
-									{
-										fileOutput.getParentFile().mkdirs();
-									}
-								}
-								
-								wrt = new BufferedWriter(new FileWriter(fileOutput, true));
-							}
-						}
-						
-						String sLine = null;
-						
-						if(rdr.ready())
-							sLine = rdr.readLine();
-						
-						String sDebugLine = null;
-						
-						String sEndRegex 		= getTerminateEndRegex();
-						Pattern pattEndRegex 	= null;
-						if(sEndRegex!=null && sEndRegex.trim().length()>0)
-						{
-							pattEndRegex = Pattern.compile(sEndRegex);
-						}
-						Matcher m = null;
-						long lIdleStartTimestamp = System.currentTimeMillis();
-						long lIdleTimeout = 5* _MIN_ms;
-						
-						while(procTeminate.isAlive() || sLine!=null)
-						{
-							if(sLine!=null)
-							{
-								sDebugLine = sPrefix + df.format(System.currentTimeMillis()) + sLine;
-		
-								if(wrt!=null)
-								{
-									wrt.write(sDebugLine);
-									wrt.newLine();
-									wrt.flush();
-								}
-								
-								if(this.is_output_console)
-								{
-									System.out.println(sLine);
-								}
-								
-								if(pattEndRegex!=null)
-								{
-									m = pattEndRegex.matcher(sLine);
-									if(m.find())
-									{
-										System.out.println("[Termination] Termination end regex matched. - "+sEndRegex);
-										break;
-									}
-								}
-							}
-							else
-							{
-								lIdleStartTimestamp = System.currentTimeMillis();
-							}
-							
-							sLine = null;
-							if(rdr.ready())
-							{
-								sLine = rdr.readLine();
-							}
-							
-							long lIdleElapsed = System.currentTimeMillis()-lIdleStartTimestamp;
-							if(lIdleElapsed >= lIdleTimeout)
-							{
-								System.out.println("[Termination] Termination command killed due to idle timeout. - "+lIdleTimeout+"ms");
-								break;
-							}
-							
-							try {
-								//let the process rest awhile when no output
-								Thread.sleep(100);
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-								break;
-							}
-						}
-					}
-					finally
-					{
-						if(wrt!=null)
-						{
-							try {
-								wrt.flush();
-								wrt.close();
-							} catch (IOException e) {
-							}
-						}
-						//
-						if(rdr!=null)
-						{
-							try {
-								rdr.close();
-							} catch (IOException e) {
-							}
-						}
-					}
-				} catch (IOException e) {
-					
-					if(e.getMessage()!=null)
-					{
-						if(e.getMessage().indexOf("Cannot run program ")>-1)
-						{
-							if(sEndCmd.startsWith("."))
-							{
-								System.out.println("[Termination] Current working directory : "+new File(".").getAbsolutePath());
-							}
-						}
-					}
-					
-					e.printStackTrace();
-				}
-				finally
-				{
-					System.out.println("[Termination] "+sPrefix+" : complete terminated command.");
-				}
+				sPrefix = (id==null?"":"["+id+"] ");
+				
+				System.out.println("[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd);
+				
+				String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);
+				
+				setCurProcessState(ProcessState.STOP_EXEC_CMD);
+				HLProcess procTerminate = new HLProcess(getProcessId()+".terminate", sSplitEndCmd);
+				procTerminate.setCommandEndRegex(getTerminateEndRegex());
+				procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
+				
+				Thread t = new Thread(procTerminate);
+				t.start();
 			}
 		}	
 		return isExecuted;
