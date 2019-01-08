@@ -23,18 +23,19 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_DISABLED 		= "disabled";;
 
 	//-- SHELL
-	public static String _PROP_KEY_SHELL				= "shell.";
-	public static String _PROP_KEY_SHELL_COMMAND	 	= _PROP_KEY_SHELL+"command.{os.name}";
-	public static String _PROP_KEY_SHELL_COMMAND_END_REGEX 	= _PROP_KEY_SHELL+"command.end.regex";
-	public static String _PROP_KEY_SHELL_CMD_BLOCK		= _PROP_KEY_SHELL+"command.block";
+	public static String _PROP_KEY_SHELL						= "shell.";
+	public static String _PROP_KEY_SHELL_CMD	 				= _PROP_KEY_SHELL+"command.{os.name}";
+	public static String _PROP_KEY_SHELL_CMD_END_REGEX 			= _PROP_KEY_SHELL+"command.end.regex";
+	public static String _PROP_KEY_SHELL_CMD_IDLE_TIMEOUT_MS 	= _PROP_KEY_SHELL+"command.idle.timeout.ms";
+	public static String _PROP_KEY_SHELL_CMD_BLOCK				= _PROP_KEY_SHELL+"command.block";
 	
-	public static String _PROP_KEY_SHELL_START_DELAY	= _PROP_KEY_SHELL+"start.delay.ms";
-	public static String _PROP_KEY_SHELL_OUTPUT_FILENAME= _PROP_KEY_SHELL+"output.filename";
-	public static String _PROP_KEY_SHELL_OUTPUT_CONSOLE = _PROP_KEY_SHELL+"output.console";
-	public static String _PROP_KEY_SHELL_RUNAS_DAEMON 	= _PROP_KEY_SHELL+"runas.daemon";
-	public static String _PROP_KEY_SHELL_DEF2_SCRIPT_DIR = _PROP_KEY_SHELL+"default.to.script.dir";
+	public static String _PROP_KEY_SHELL_START_DELAY			= _PROP_KEY_SHELL+"start.delay.ms";
+	public static String _PROP_KEY_SHELL_OUTPUT_FILENAME		= _PROP_KEY_SHELL+"output.filename";
+	public static String _PROP_KEY_SHELL_OUTPUT_CONSOLE 		= _PROP_KEY_SHELL+"output.console";
+	public static String _PROP_KEY_SHELL_RUNAS_DAEMON 			= _PROP_KEY_SHELL+"runas.daemon";
+	public static String _PROP_KEY_SHELL_DEF2_SCRIPT_DIR 		= _PROP_KEY_SHELL+"default.to.script.dir";
 	
-	public static String _PROP_KEY_SHELL_TERMINATE_CMD	= _PROP_KEY_SHELL+"terminate.command.{os.name}";
+	public static String _PROP_KEY_SHELL_TERMINATE_CMD				= _PROP_KEY_SHELL+"terminate.command.{os.name}";
 	public static String _PROP_KEY_SHELL_TERMINATE_END_REGEX		= _PROP_KEY_SHELL+"terminate.end.regex";
 	public static String _PROP_KEY_SHELL_TERMINATE_IDLE_TIMEOUT_MS	= _PROP_KEY_SHELL+"idle.timeout.ms";
 	
@@ -75,7 +76,7 @@ public class HLProcessConfig {
 		else if(sOsName.indexOf("mac")>-1)
 			sOsName = "mac";
 		osname = sOsName;
-		_PROP_KEY_SHELL_COMMAND = _PROP_KEY_SHELL_COMMAND.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
+		_PROP_KEY_SHELL_CMD = _PROP_KEY_SHELL_CMD.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
 		_PROP_KEY_SHELL_TERMINATE_CMD = _PROP_KEY_SHELL_TERMINATE_CMD.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
 	}
 	
@@ -289,13 +290,13 @@ public class HLProcessConfig {
 				p.setRunAsDaemon("true".equalsIgnoreCase(sConfigVal));
 			}
 			// 
-			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_COMMAND);
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_CMD);
 			if(sConfigVal!=null)
 			{
 				p.setProcessCommand(splitCommands(p, sConfigVal));
 			}
 			// 
-			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_COMMAND_END_REGEX);
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_CMD_END_REGEX);
 			if(sConfigVal!=null)
 			{
 				p.setCommandEndRegex(sConfigVal);
@@ -428,15 +429,19 @@ public class HLProcessConfig {
 				p.setDependCheckIntervalMs(lVal);
 			}
 			//
-			if(!p.isDisabled())
-			{
-				mapProcesses.put(sPID, p);
-			}
-			else
+			mapProcesses.put(sPID, p);
+			
+			if(p.isDisabled())
 			{
 				mapDisabledProcesses.put(sPID, p);
 			}
 		}
+		
+		for(HLProcess p : mapDisabledProcesses.values())
+		{
+			mapProcesses.remove(p.getProcessId());
+		}
+		
 		validateProcessConfigs();
 	}
 	
@@ -444,7 +449,7 @@ public class HLProcessConfig {
 	private void validateProcessConfigs()
 	{
 		for(HLProcess p : getProcesses())
-		{
+		{	
 			if(p.isRemoteRef())
 			{
 				if(p.getProcessCommand().trim().length()>0
@@ -460,7 +465,10 @@ public class HLProcessConfig {
 			}
 			else if(p.getProcessCommand().trim().length()==0)
 			{
-				throw new RuntimeException("["+p.getProcessId()+"] Process command cannot be empty ! - "+_PROP_KEY_SHELL_COMMAND);
+				if(!p.isDisabled())
+				{
+					throw new RuntimeException("["+p.getProcessId()+"] Process command cannot be empty ! - "+_PROP_KEY_SHELL_CMD);
+				}
 			}
 		}
 	}

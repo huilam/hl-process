@@ -147,7 +147,7 @@ public class HLProcessMgr
 				if(iActiveProcess>0 && (System.currentTimeMillis()-lLast_notification_ms>=1000))
 				{
 					lLast_notification_ms = System.currentTimeMillis();
-					System.out.println("[Termination] Waiting "+iActiveProcess+" processes ... "+HLProcess.milisec2Words(lShutdownElapsed));
+					System.out.println("[Termination] Waiting "+iActiveProcess+" processes ... "+TimeUtil.milisec2Words(lShutdownElapsed));
 					for(HLProcess proc : vProcesses)
 					{
 						if(proc.isProcessAlive())
