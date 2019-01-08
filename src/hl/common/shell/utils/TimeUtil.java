@@ -20,16 +20,16 @@
  
  */
 
-package hl.common.shell;
+package hl.common.shell.utils;
 
 import java.util.logging.Logger;
 
 public class TimeUtil{
 	
-	protected final static long _SEC_ms 	= 1000;
-	protected final static long _MIN_ms 	= 60 * _SEC_ms;
-	protected final static long _HOUR_ms 	= 60 * _MIN_ms;
-	protected final static long _DAY_ms 	= 24 * _HOUR_ms;
+	public final static long _SEC_ms 	= 1000;
+	public final static long _MIN_ms 	= 60 * _SEC_ms;
+	public final static long _HOUR_ms 	= 60 * _MIN_ms;
+	public final static long _DAY_ms 	= 24 * _HOUR_ms;
 	
 	private static Logger logger = Logger.getLogger(TimeUtil.class.getName());
 

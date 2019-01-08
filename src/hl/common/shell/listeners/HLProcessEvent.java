@@ -1,4 +1,6 @@
-package hl.common.shell;
+package hl.common.shell.listeners;
+
+import hl.common.shell.HLProcess;
 
 public interface HLProcessEvent 
 {

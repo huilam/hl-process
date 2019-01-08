@@ -17,6 +17,9 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import hl.common.shell.listeners.HLProcessEvent;
+import hl.common.shell.utils.TimeUtil;
+
 public class HLProcess extends HLProcessCmd implements Runnable
 {
 	private final static String _VERSION = "HLProcess alpha v0.57";

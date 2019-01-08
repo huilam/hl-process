@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import hl.common.shell.HLProcess;
+import hl.common.shell.utils.PropUtil;
 
 public class HLProcessConfig {
 	
