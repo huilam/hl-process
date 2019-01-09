@@ -22,7 +22,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.58";
+	private final static String _VERSION = "HLProcess alpha v0.59";
 	
 	public static enum ProcessState 
 	{ 
@@ -32,9 +32,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		
 		START_WAIT_DEP_FAILED(20), START_WAIT_DEP_TIMEOUT(21), 
 		START_FAILED(22),  START_INIT_FAILED(23), START_INIT_TIMEOUT(24), 
-
-		STOP_REQUEST(30), 
-		STOPPING(31), STOP_EXEC_CMD(32), STOP_WAIT_OTHERS(33), STOP_WAIT_OTHERS_TIMEOUT(34),
+		
+		STARTED_IDLE_TIMEOUT(30), STOP_REQUEST(31), 
+		
+		STOPPING(40), STOP_EXEC_CMD(41), STOP_WAIT_OTHERS(42), STOP_WAIT_OTHERS_TIMEOUT(43),
+		
 		TERMINATED(50);
 		
 		private final int code;
@@ -368,7 +370,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							if(rdr.ready())
 								sLine = rdr.readLine();
 							
-							long lIdleStartTimestamp 	= 0;
+							long lIdleStartTimestamp 	= System.currentTimeMillis();
 							long lIdleTimeoutMs 		= getCommandIdleTimeoutMs();
 							
 							while(proc.isAlive() || sLine!=null)
@@ -376,6 +378,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			
 								if(sLine!=null)
 								{
+									lIdleStartTimestamp = System.currentTimeMillis();
 									sDebugLine = sPrefix + df.format(System.currentTimeMillis()) + sLine;
 			
 									if(wrt!=null)
@@ -450,11 +453,6 @@ public class HLProcess extends HLProcessCmd implements Runnable
 											
 										}
 									}
-									
-									if(lIdleTimeoutMs>0)
-									{
-										lIdleStartTimestamp = System.currentTimeMillis();
-									}
 								}
 								else
 								{
@@ -464,6 +462,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 										
 										if(lIdleElapsed >= lIdleTimeoutMs)
 										{
+											setCurProcessState(ProcessState.STARTED_IDLE_TIMEOUT);
 											logger.log(Level.INFO, 
 													sPrefix + "idle_timeout - Elapsed: "+TimeUtil.milisec2Words(lIdleElapsed));
 											break;

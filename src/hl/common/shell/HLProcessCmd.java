@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import hl.common.shell.utils.TimeUtil;
+
 public class HLProcessCmd 
 {
 	private String id					= null;
@@ -21,10 +23,10 @@ public class HLProcessCmd
 	private long delay_start_ms			= 0;
 	
 	private long dep_check_interval_ms	= 100;
-	private long dep_wait_timeout_ms	= 30000;
+	private long dep_wait_timeout_ms	= 5 * TimeUtil._MIN_ms; 
 	
 	private boolean shutdown_all_on_termination = false;	
-	private long shutdown_timeout_ms			= 30000;
+	private long shutdown_timeout_ms			= 5 * TimeUtil._MIN_ms; 
 	
 	private Collection<HLProcess> depends 	= new ArrayList<HLProcess>();
 	private String command_block_start		= "";
