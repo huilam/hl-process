@@ -38,7 +38,7 @@ public class HLProcessConfig {
 	
 	public static String _PROP_KEY_SHELL_TERMINATE_CMD				= _PROP_KEY_SHELL+"terminate.command.{os.name}";
 	public static String _PROP_KEY_SHELL_TERMINATE_END_REGEX		= _PROP_KEY_SHELL+"terminate.end.regex";
-	public static String _PROP_KEY_SHELL_TERMINATE_IDLE_TIMEOUT_MS	= _PROP_KEY_SHELL+"idle.timeout.ms";
+	public static String _PROP_KEY_SHELL_TERMINATE_IDLE_TIMEOUT_MS	= _PROP_KEY_SHELL+"terminate.idle.timeout.ms";
 	
 	public static String _PROP_KEY_SHELL_SHUTDOWN_ALL_ON_TEMINATE 	= _PROP_KEY_SHELL+"shutdown.all.on.termination";
 	public static String _PROP_KEY_SHELL_SHUTDOWN_ALL_TIMEOUT_MS 	= _PROP_KEY_SHELL+"shutdown.all.timeout.ms";

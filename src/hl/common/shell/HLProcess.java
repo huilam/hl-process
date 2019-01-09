@@ -22,7 +22,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.57";
+	private final static String _VERSION = "HLProcess alpha v0.58";
 	
 	public static enum ProcessState 
 	{ 
@@ -33,7 +33,8 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		START_WAIT_DEP_FAILED(20), START_WAIT_DEP_TIMEOUT(21), 
 		START_FAILED(22),  START_INIT_FAILED(23), START_INIT_TIMEOUT(24), 
 
-		STOPPING(30), STOP_EXEC_CMD(31), STOP_WAIT_OTHERS(32), STOP_WAIT_OTHERS_TIMEOUT(33),
+		STOP_REQUEST(30), 
+		STOPPING(31), STOP_EXEC_CMD(32), STOP_WAIT_OTHERS(33), STOP_WAIT_OTHERS_TIMEOUT(34),
 		TERMINATED(50);
 		
 		private final int code;
@@ -71,13 +72,14 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	
 	private String terminate_command  		= "";
 	private String terminate_end_regex		= "";
-	private long terminate_idle_timeout_ms	= 30 * TimeUtil._SEC_ms;
+	private long terminate_idle_timeout_ms	= 5 * TimeUtil._MIN_ms; //enforce 5 min idle timeout
 	private boolean is_exec_terminate_cmd  		= false;
 	
 	private Map<ProcessState, Long> stateMap 	= new LinkedHashMap<ProcessState, Long>();
 	private ProcessState stateCurrent	 		= ProcessState.IDLE;
 	
-	private HLProcessEvent listener				= null; 
+	private HLProcessEvent listener				= null;	
+	private HLProcess processRequestor			= null;
 	
 	public static Logger logger = Logger.getLogger(HLProcess.class.getName());
 
@@ -448,6 +450,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 											
 										}
 									}
+									
+									if(lIdleTimeoutMs>0)
+									{
+										lIdleStartTimestamp = System.currentTimeMillis();
+									}
 								}
 								else
 								{
@@ -462,11 +469,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 											break;
 										}
 									}
+									
 									try {
 										//let the process rest awhile when no output
 										Thread.sleep(100);
 									} catch (InterruptedException e) {
-										// TODO Auto-generated catch block
 										e.printStackTrace();
 										break;
 									}
@@ -476,11 +483,6 @@ public class HLProcess extends HLProcessCmd implements Runnable
 								if(rdr.ready())
 								{
 									sLine = rdr.readLine();
-								}
-								
-								if(sLine==null)
-								{
-									lIdleStartTimestamp = System.currentTimeMillis();
 								}
 							}
 							
@@ -617,6 +619,15 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		
 	}
 	
+	public void reqStateChange(HLProcess aRequestor, ProcessState aProcessState)
+	{
+		if(getCurProcessState().isBefore(aProcessState))
+		{
+			processRequestor = aRequestor;
+			setCurProcessState(aProcessState);
+		}
+	}
+	
 	public String getProcessStateHist()
 	{
 		StringBuffer sbState = new StringBuffer();
@@ -649,6 +660,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 				else
 				{
 					lElapseMs = System.currentTimeMillis()-arrStartTimes[i];
+				}
+				
+				if(s.is(ProcessState.STOP_REQUEST))
+				{
+					sbState.append("[req:").append(processRequestor.getProcessId()).append("]");
 				}
 				
 				if(lElapseMs!=null && lElapseMs>0)

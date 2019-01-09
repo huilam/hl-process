@@ -263,7 +263,7 @@ public class HLProcessMgr
 				}
 				else if(!p.isTerminating())
 				{
-					System.out.println("[DEBUG] Terminating "+p.getProcessId()+" ... "+p.getCurProcessState().toString());
+					p.reqStateChange(terminatingProcess, ProcessState.STOP_REQUEST);
 					p.terminateProcess();
 				}
 			}
