@@ -22,13 +22,13 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.59";
+	private final static String _VERSION = "HLProcess alpha v0.60";
 	
 	public static enum ProcessState 
 	{ 
 		IDLE(0), 
 		
-		STARTING(10), START_WAIT_DEP(11), START_INIT(12), STARTED(13), 
+		STARTING(10), START_WAIT_DEP(11), START_DEP_READY(12), START_INIT(13), STARTED(14), 
 		
 		START_WAIT_DEP_FAILED(20), START_WAIT_DEP_TIMEOUT(21), 
 		START_FAILED(22),  START_INIT_FAILED(23), START_INIT_TIMEOUT(24), 
@@ -318,6 +318,16 @@ public class HLProcess extends HLProcessCmd implements Runnable
 				onProcessStarting(this);
 				logger.log(Level.INFO, sPrefix+"start - "+getProcessId());
 				boolean isDepOk = checkDependenciesB4Start();
+				
+				if(isDepOk)
+				{
+					setCurProcessState(ProcessState.START_DEP_READY);
+				}
+				
+				if(getDependProcesses().size()>0)
+				{
+					logger.log(Level.INFO, sPrefix +" wait_dep_outcome "+isDepOk);
+				}
 				
 				if(isNotStarted() && isDepOk)
 				{
