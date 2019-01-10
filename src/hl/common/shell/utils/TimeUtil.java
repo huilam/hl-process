@@ -70,6 +70,16 @@ public class TimeUtil{
 		return sb.toString().trim();
 	}
 
+	private static long getElapseMs(long aStartTimestampMs)
+	{
+		return System.currentTimeMillis()-aStartTimestampMs;
+	}
+	
+	public static boolean isTimeout(long aStartTimestampMs, long aTimeoutMs)
+	{
+		long lElapsed = getElapseMs(aStartTimestampMs);
+		return lElapsed >= aTimeoutMs;
+	}
 	
 	public static void main(String args[]) throws Exception
 	{

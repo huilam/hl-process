@@ -1,6 +1,9 @@
 package hl.common.shell;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,6 +22,7 @@ public class HLProcessMgr
 	private HLProcessEvent event 	= null;
 	private boolean is_terminating 	= false;
 	private HLProcess terminatingProcess = null;
+	private Map<String, Long> mapInitSuccess = new LinkedHashMap<String, Long>();
 		
 	public HLProcessMgr(String aPropFileName)
 	{
@@ -57,6 +61,29 @@ public class HLProcessMgr
 						}
 
 						public void onProcessInitSuccess(HLProcess p) {
+							
+							mapInitSuccess.put(p.getProcessId(), System.currentTimeMillis());
+							
+							if(mapInitSuccess.size()==getAllProcesses().length)
+							{
+								System.out.println("[STARTED] All processes started : ");
+								int i = 1;
+								SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
+								StringBuffer sb = new StringBuffer();
+								for(String sProcID : mapInitSuccess.keySet())
+								{
+									long lInitTimeStamp = mapInitSuccess.get(sProcID);
+									
+									sb.setLength(0);
+									sb.append(i);
+									while(sb.length()<4)
+									{
+										sb.insert(0, " ");
+									}
+									System.out.println(sb.toString()+"."+sProcID+" : "+df.format(lInitTimeStamp));
+									i++;
+								}
+							}
 						}
 						
 						public void onProcessTerminate(HLProcess p) 

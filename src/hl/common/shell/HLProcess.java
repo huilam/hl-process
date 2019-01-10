@@ -22,7 +22,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.60";
+	private final static String _VERSION = "HLProcess alpha v0.61";
 	
 	public static enum ProcessState 
 	{ 
@@ -35,7 +35,8 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		
 		STARTED_IDLE_TIMEOUT(30), STOP_REQUEST(31), 
 		
-		STOPPING(40), STOP_EXEC_CMD(41), STOP_WAIT_OTHERS(42), STOP_WAIT_OTHERS_TIMEOUT(43),
+		STOPPING(40), STOP_EXEC_CMD_PENDING(41), STOP_EXEC_CMD_PENDING_TIMEOUT(42), STOP_EXEC_CMD(43), 
+		STOP_WAIT_OTHERS(44), STOP_WAIT_OTHERS_TIMEOUT(45),
 		
 		TERMINATED(50);
 		
@@ -230,12 +231,12 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			StringBuffer sbDepCmd = new StringBuffer();
 			
 			
+			long lWaitDepStartMs = System.currentTimeMillis();
 			while(tmpDepends.size()>0 && ProcessState.START_WAIT_DEP.is(getCurProcessState()))
 			{
 				sbDepCmd.setLength(0);
 				
 				Iterator<HLProcess> iter = tmpDepends.iterator();
-				long lElapsed = System.currentTimeMillis() - this.run_start_timestamp;
 				while(iter.hasNext())
 				{
 					HLProcess d = iter.next();
@@ -264,14 +265,17 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							sbDepCmd.append(d.getProcessCommand());
 					}
 					
-					if(isDependTimeOut && lElapsed >= getDependTimeoutMs())
+					if(isDependTimeOut)
 					{
-						String sErr = sPrefix+"Dependance process(es) init timeout ! "+getDependTimeoutMs()+"ms : "+sbDepCmd.toString();
-						logger.log(Level.SEVERE, sErr);
-						isWaitDepOk = false;
-						setCurProcessState(ProcessState.START_WAIT_DEP_TIMEOUT);
-						onProcessError(this, new Exception(sErr));
-						break;
+						if(TimeUtil.isTimeout(lWaitDepStartMs, getDependTimeoutMs()))
+						{
+							String sErr = sPrefix+"Dependance process(es) init timeout ! "+getDependTimeoutMs()+"ms : "+sbDepCmd.toString();
+							logger.log(Level.SEVERE, sErr);
+							isWaitDepOk = false;
+							setCurProcessState(ProcessState.START_WAIT_DEP_TIMEOUT);
+							onProcessError(this, new Exception(sErr));
+							break;
+						}
 					}
 				}
 				
@@ -326,7 +330,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 				
 				if(getDependProcesses().size()>0)
 				{
-					logger.log(Level.INFO, sPrefix +" wait_dep_outcome "+isDepOk);
+					logger.log(Level.INFO, sPrefix +" dependencies ready - "+isDepOk);
 				}
 				
 				if(isNotStarted() && isDepOk)
@@ -339,7 +343,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					}
 					setCurProcessState(ProcessState.START_INIT);
 					
-					long lStart = System.currentTimeMillis();
+					long lProcStartMs = System.currentTimeMillis();
 					BufferedReader rdr = null;
 					BufferedWriter wrt = null;
 					
@@ -380,7 +384,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							if(rdr.ready())
 								sLine = rdr.readLine();
 							
-							long lIdleStartTimestamp 	= System.currentTimeMillis();
+							long lLastNonIdleTimestamp 	= System.currentTimeMillis();
 							long lIdleTimeoutMs 		= getCommandIdleTimeoutMs();
 							
 							while(proc.isAlive() || sLine!=null)
@@ -388,7 +392,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			
 								if(sLine!=null)
 								{
-									lIdleStartTimestamp = System.currentTimeMillis();
+									lLastNonIdleTimestamp = System.currentTimeMillis();
 									sDebugLine = sPrefix + df.format(System.currentTimeMillis()) + sLine;
 			
 									if(wrt!=null)
@@ -422,10 +426,9 @@ public class HLProcess extends HLProcessCmd implements Runnable
 										{
 											if(getInitTimeoutMs()>0)
 											{
-												long lElapsed = System.currentTimeMillis() - lStart;
-												if(lElapsed >= getInitTimeoutMs())
+												if(TimeUtil.isTimeout(lProcStartMs, getInitTimeoutMs()))
 												{
-													String sErr = sPrefix+"Init timeout ! "+TimeUtil.milisec2Words(lElapsed)+" - "+getProcessCommand();
+													String sErr = sPrefix+"Init timeout ! "+TimeUtil.milisec2Words(System.currentTimeMillis()-lProcStartMs)+" - "+getProcessCommand();
 													this.is_init_success = false;
 													logger.log(Level.SEVERE, sErr);
 													break;
@@ -438,7 +441,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 												this.is_init_failed =  m.find();
 												if(this.is_init_failed)
 												{
-													String sErr = sPrefix + "init_error - Elapsed: "+TimeUtil.milisec2Words(System.currentTimeMillis()-this.run_start_timestamp);
+													String sErr = sPrefix + "init_error - Elapsed: "+TimeUtil.milisec2Words(System.currentTimeMillis()-lProcStartMs);
 													logger.log(Level.SEVERE, sErr);
 													proc.destroy();
 													break;
@@ -453,11 +456,12 @@ public class HLProcess extends HLProcessCmd implements Runnable
 												{
 													onProcessInitSuccess(this);
 													logger.log(Level.INFO, 
-															sPrefix + "init_success - Elapsed: "+TimeUtil.milisec2Words(System.currentTimeMillis()-this.run_start_timestamp));
+															sPrefix + "init_success - Elapsed: "+TimeUtil.milisec2Words(System.currentTimeMillis()-lProcStartMs));
 												}
 											}
 											else
 											{
+												onProcessInitSuccess(this);
 												this.is_init_success = true;
 											}
 											
@@ -468,13 +472,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 								{
 									if(lIdleTimeoutMs>0)
 									{
-										long lIdleElapsed = System.currentTimeMillis() - lIdleStartTimestamp;
-										
-										if(lIdleElapsed >= lIdleTimeoutMs)
+										if(TimeUtil.isTimeout(lLastNonIdleTimestamp, lIdleTimeoutMs))
 										{
 											setCurProcessState(ProcessState.STARTED_IDLE_TIMEOUT);
 											logger.log(Level.INFO, 
-													sPrefix + "idle_timeout - Elapsed: "+TimeUtil.milisec2Words(lIdleElapsed));
+													sPrefix + "idle_timeout - Elapsed: "+TimeUtil.milisec2Words(System.currentTimeMillis()-lLastNonIdleTimestamp));
 											break;
 										}
 									}
@@ -534,8 +536,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		}
 		finally
 		{
-			long lElapsed = (System.currentTimeMillis()-this.run_start_timestamp);
-			logger.log(Level.INFO, sPrefix+"end - "+getProcessCommand()+" (elapsed: "+TimeUtil.milisec2Words(lElapsed)+")");
+			logger.log(Level.INFO, sPrefix+"end - "+getProcessCommand()+" (elapsed: "+TimeUtil.milisec2Words(System.currentTimeMillis()-this.run_start_timestamp)+")");
 
 			executeTerminateCmd();
 			
@@ -551,27 +552,31 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	private boolean executeTerminateCmd()
 	{
 		boolean isExecuted = false;
-		if(!this.is_exec_terminate_cmd && isStarted())
+		if(!this.is_exec_terminate_cmd)
 		{
-			isExecuted = true;
-			this.is_exec_terminate_cmd = true;
-			String sPrefix = (getProcessId()==null?"":getProcessId());
-			String sEndCmd = getTerminateCommand();
-			if(sEndCmd!=null && sEndCmd.trim().length()>0)
+			//Waiting for started
+			if(isStarted())
 			{
-				sPrefix = "["+sPrefix+"]";
-				
-				System.out.println("[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd);
-				
-				String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);
-				
-				setCurProcessState(ProcessState.STOP_EXEC_CMD);
-				HLProcess procTerminate = new HLProcess(getProcessId()+".terminate", sSplitEndCmd);
-				procTerminate.setCommandEndRegex(getTerminateEndRegex());
-				procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
-				
-				Thread t = new Thread(procTerminate);
-				t.start();
+				this.is_exec_terminate_cmd = true;
+				isExecuted = true;
+				String sPrefix = (getProcessId()==null?"":getProcessId());
+				String sEndCmd = getTerminateCommand();
+				if(sEndCmd!=null && sEndCmd.trim().length()>0)
+				{
+					sPrefix = "["+sPrefix+"]";
+					
+					System.out.println("[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd);
+					
+					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);
+					
+					setCurProcessState(ProcessState.STOP_EXEC_CMD);
+					HLProcess procTerminate = new HLProcess(getProcessId()+".terminate", sSplitEndCmd);
+					procTerminate.setCommandEndRegex(getTerminateEndRegex());
+					procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
+					
+					Thread t = new Thread(procTerminate);
+					t.start();
+				}
 			}
 		}	
 		return isExecuted;
