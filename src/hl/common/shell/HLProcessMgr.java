@@ -19,6 +19,7 @@ public class HLProcessMgr
 	private HLProcessConfig procConfig = null;
 	private static Logger logger  	= Logger.getLogger(HLProcessMgr.class.getName());
 	
+	private long startTimestamp	= 0;
 	private HLProcessEvent event 	= null;
 	private boolean is_terminating 	= false;
 	private HLProcess terminatingProcess = null;
@@ -66,9 +67,37 @@ public class HLProcessMgr
 							
 							if(mapInitSuccess.size()==getAllProcesses().length)
 							{
-								System.out.println("[STARTED] All processes started : ");
+								
+								
+								System.out.println();
+								System.out.println("                            OOOOOOOOOOO");
+								System.out.println("                        OOOOOOOOOOOOOOOOOOO");
+								System.out.println("                     OOOOOO  OOOOOOOOO  OOOOOO");
+								System.out.println("                   OOOOOO      OOOOO      OOOOOO");
+								System.out.println("                 OOOOOOOO      OOOOO      OOOOOOOO");
+								System.out.println("                OOOOOOOOOO    OOOOOOO    OOOOOOOOOO");
+								System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+								System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+								System.out.println("               OOOO  OOOOOOOOOOOOOOOOOOOOOOOOO  OOOO");
+								System.out.println("                OOOO  OOOOOOOOOOOOOOOOOOOOOOO  OOOO");
+								System.out.println("                 OOOO   OOOOOOOOOOOOOOOOOOOO  OOOO");
+								System.out.println("                   OOOOO   OOOOOOOOOOOOOOO   OOOO");
+								System.out.println("                     OOOOOO   OOOOOOOOO   OOOOOO");
+								System.out.println("                        OOOOOO         OOOOOO");
+								System.out.println("                            OOOOOOOOOOOO");
+								System.out.println();
+								System.out.println();
+								System.out.println("   ######  ########  ######   #######  ######## ######## #######");
+								System.out.println("  ##    ##    ##    ##    ##  ##    ##    ##    ##       ##     #");
+								System.out.println("  ##          ##    ##    ##  ##    ##    ##    ##       ##      #");
+								System.out.println("   ######     ##    ########  #######     ##    ######   ##      #");
+								System.out.println("        ##    ##    ##    ##  ##   ##     ##    ##       ##      #");
+								System.out.println("  ##    ##    ##    ##    ##  ##    ##    ##    ##       ##     # ");
+								System.out.println("   ######     ##    ##    ##  ##    ##    ##    ######## #######");
+								System.out.println();
 								int i = 1;
 								SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
+								System.out.println("[STARTED] All processes are ready.");
 								StringBuffer sb = new StringBuffer();
 								for(String sProcID : mapInitSuccess.keySet())
 								{
@@ -76,13 +105,15 @@ public class HLProcessMgr
 									
 									sb.setLength(0);
 									sb.append(i);
-									while(sb.length()<4)
+									while(sb.length()<3)
 									{
 										sb.insert(0, " ");
 									}
-									System.out.println(sb.toString()+"."+sProcID+" : "+df.format(lInitTimeStamp));
+									System.out.println("[STARTED] "+sb.toString()+"."+sProcID+" started at "+df.format(lInitTimeStamp));
 									i++;
 								}
+								System.out.println("[STARTED] Total Starting Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-getStartTimestamp()));
+								System.out.println();
 							}
 						}
 						
@@ -263,6 +294,11 @@ public class HLProcessMgr
 		return logger.getLevel();
 	}
 	
+	public long getStartTimestamp()
+	{
+		return this.startTimestamp;
+	}
+	
 	public HLProcess[] getAllProcesses()
 	{
 		return procConfig.getProcesses();
@@ -304,6 +340,8 @@ public class HLProcessMgr
 	
 	private synchronized void startAllProcesses(long lSleepMs)
 	{
+		this.startTimestamp = System.currentTimeMillis();
+
 		if(this.is_terminating)
 			return;
 		
