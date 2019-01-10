@@ -4,6 +4,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 
+import hl.common.shell.utils.TimeUtil;
+
 public class TestHttpUrl {
 
 	public static boolean isUrlReady(String aURL, long lTimeoutSecs)
