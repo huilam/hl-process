@@ -26,8 +26,17 @@ public class TestHttpUrl {
 				catch(Exception ex)
 				{
 				}
-				System.out.println(df.format(System.currentTimeMillis())+"  "+aURL+" : "+iRespCode);
 				isOK = iRespCode>=200 && iRespCode<300;
+				
+				String sOutput = df.format(System.currentTimeMillis())+"  "+aURL+" : "+iRespCode;
+				if(isOK)
+				{
+					System.out.println("["+TestHttpUrl.class.getSimpleName()+".OK] "+sOutput);
+				}
+				else
+				{
+					System.out.println(sOutput);
+				}
 				
 				if(lTimeoutSecs>0)
 				{

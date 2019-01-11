@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.security.ProtectionDomain;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.62";
+	private final static String _VERSION = "HLProcess alpha v0.63";
 	
 	public static enum ProcessState 
 	{ 
@@ -306,6 +307,15 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					if(fileDir!=null)
 					{
 						pb.directory(fileDir);
+					}
+				}
+				else
+				{
+					ProtectionDomain d = HLProcess.class.getProtectionDomain();
+					if(d!=null)
+					{
+						String sPath = d.getCodeSource().getLocation().getFile();
+						pb.directory(new File(sPath));
 					}
 				}
 				pb.redirectErrorStream(true);
