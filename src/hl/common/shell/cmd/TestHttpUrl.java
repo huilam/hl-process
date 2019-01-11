@@ -31,7 +31,7 @@ public class TestHttpUrl {
 				String sOutput = df.format(System.currentTimeMillis())+"  "+aURL+" : "+iRespCode;
 				if(isOK)
 				{
-					System.out.println("["+TestHttpUrl.class.getSimpleName()+".OK] "+sOutput);
+					System.out.println("[TestHttpUrl-OK] "+sOutput);
 				}
 				else
 				{

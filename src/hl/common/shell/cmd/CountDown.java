@@ -1,5 +1,6 @@
 package hl.common.shell.cmd;
 
+import java.text.SimpleDateFormat;
 
 public class CountDown
 {
@@ -10,7 +11,7 @@ public class CountDown
 		
 		if(args.length==2)
 		{
-			
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss.SSS");
 			long lCountDownTotalms	= 0;
 			String lCountDownUnit 	= args[1];
 			
@@ -22,15 +23,12 @@ public class CountDown
 					long lElapsed = 0;
 					while(lCountDownTotalms>lElapsed)
 					{
-						System.out.println((lCountDownTotalms-lElapsed)/1000);
-						
-						
+						System.out.println("[CountDown] "+(lCountDownTotalms-lElapsed)/1000);
 						Thread.sleep(980);
-						
 						lElapsed = System.currentTimeMillis()-lCountDownStartTime;
 					}
 					isSyntaxErr = false;
-					System.out.println("done.");
+					System.out.println("[CountDown-OK] "+df.format(System.currentTimeMillis()));
 				}
 				catch(NumberFormatException ex)
 				{

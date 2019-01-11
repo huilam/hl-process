@@ -63,57 +63,59 @@ public class HLProcessMgr
 
 						public void onProcessInitSuccess(HLProcess p) {
 							
-							mapInitSuccess.put(p.getProcessId(), System.currentTimeMillis());
-							
-							if(mapInitSuccess.size()==getAllProcesses().length)
+							if(p.getCurProcessState().isAtLeast(ProcessState.STARTED))
 							{
 								
 								
-								System.out.println();
-								System.out.println("                            OOOOOOOOOOO");
-								System.out.println("                        OOOOOOOOOOOOOOOOOOO");
-								System.out.println("                     OOOOOO  OOOOOOOOO  OOOOOO");
-								System.out.println("                   OOOOOO      OOOOO      OOOOOO");
-								System.out.println("                 OOOOOOOO      OOOOO      OOOOOOOO");
-								System.out.println("                OOOOOOOOOO    OOOOOOO    OOOOOOOOOO");
-								System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-								System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-								System.out.println("               OOOO  OOOOOOOOOOOOOOOOOOOOOOOOO  OOOO");
-								System.out.println("                OOOO  OOOOOOOOOOOOOOOOOOOOOOO  OOOO");
-								System.out.println("                 OOOO   OOOOOOOOOOOOOOOOOOOO  OOOO");
-								System.out.println("                   OOOOO   OOOOOOOOOOOOOOO   OOOO");
-								System.out.println("                     OOOOOO   OOOOOOOOO   OOOOOO");
-								System.out.println("                        OOOOOO         OOOOOO");
-								System.out.println("                            OOOOOOOOOOOO");
-								System.out.println();
-								System.out.println();
-								System.out.println("   ######  ########  ######   #######  ######## ######## #######");
-								System.out.println("  ##    ##    ##    ##    ##  ##    ##    ##    ##       ##     #");
-								System.out.println("  ##          ##    ##    ##  ##    ##    ##    ##       ##      #");
-								System.out.println("   ######     ##    ########  #######     ##    ######   ##      #");
-								System.out.println("        ##    ##    ##    ##  ##   ##     ##    ##       ##      #");
-								System.out.println("  ##    ##    ##    ##    ##  ##    ##    ##    ##       ##     # ");
-								System.out.println("   ######     ##    ##    ##  ##    ##    ##    ######## #######");
-								System.out.println();
-								int i = 1;
-								SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
-								System.out.println("[STARTED] All processes are ready.");
-								StringBuffer sb = new StringBuffer();
-								for(String sProcID : mapInitSuccess.keySet())
+								mapInitSuccess.put(p.getProcessId(), System.currentTimeMillis());
+								if(mapInitSuccess.size()==getAllProcesses().length)
 								{
-									long lInitTimeStamp = mapInitSuccess.get(sProcID);
-									
-									sb.setLength(0);
-									sb.append(i);
-									while(sb.length()<3)
+									System.out.println();
+									System.out.println("                            OOOOOOOOOOO");
+									System.out.println("                        OOOOOOOOOOOOOOOOOOO");
+									System.out.println("                     OOOOOO  OOOOOOOOO  OOOOOO");
+									System.out.println("                   OOOOOO      OOOOO      OOOOOO");
+									System.out.println("                 OOOOOOOO      OOOOO      OOOOOOOO");
+									System.out.println("                OOOOOOOOOO    OOOOOOO    OOOOOOOOOO");
+									System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+									System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+									System.out.println("               OOOO  OOOOOOOOOOOOOOOOOOOOOOOOO  OOOO");
+									System.out.println("                OOOO  OOOOOOOOOOOOOOOOOOOOOOO  OOOO");
+									System.out.println("                 OOOO   OOOOOOOOOOOOOOOOOOOO  OOOO");
+									System.out.println("                   OOOOO   OOOOOOOOOOOOOOO   OOOO");
+									System.out.println("                     OOOOOO   OOOOOOOOO   OOOOOO");
+									System.out.println("                        OOOOOO         OOOOOO");
+									System.out.println("                            OOOOOOOOOOOO");
+									System.out.println();
+									System.out.println();
+									System.out.println("   ######  ########  ######   #######  ######## ######## #######");
+									System.out.println("  ##    ##    ##    ##    ##  ##    ##    ##    ##       ##     #");
+									System.out.println("  ##          ##    ##    ##  ##    ##    ##    ##       ##      #");
+									System.out.println("   ######     ##    ########  #######     ##    ######   ##      #");
+									System.out.println("        ##    ##    ##    ##  ##   ##     ##    ##       ##      #");
+									System.out.println("  ##    ##    ##    ##    ##  ##    ##    ##    ##       ##     # ");
+									System.out.println("   ######     ##    ##    ##  ##    ##    ##    ######## #######");
+									System.out.println();
+									int i = 1;
+									SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
+									System.out.println("[STARTED] All processes are ready.");
+									StringBuffer sb = new StringBuffer();
+									for(String sProcID : mapInitSuccess.keySet())
 									{
-										sb.insert(0, " ");
+										long lInitTimeStamp = mapInitSuccess.get(sProcID);
+										
+										sb.setLength(0);
+										sb.append(i);
+										while(sb.length()<3)
+										{
+											sb.insert(0, " ");
+										}
+										System.out.println("[STARTED] "+sb.toString()+"."+sProcID+" started at "+df.format(lInitTimeStamp));
+										i++;
 									}
-									System.out.println("[STARTED] "+sb.toString()+"."+sProcID+" started at "+df.format(lInitTimeStamp));
-									i++;
+									System.out.println("[STARTED] Total Startup Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-getStartTimestamp()));
+									System.out.println();
 								}
-								System.out.println("[STARTED] Total Starting Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-getStartTimestamp()));
-								System.out.println();
 							}
 						}
 						

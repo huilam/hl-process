@@ -471,8 +471,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 											}
 											else
 											{
-												onProcessInitSuccess(this);
-												this.is_init_success = true;
+												if(System.currentTimeMillis()-lProcStartMs>500)
+												{
+													onProcessInitSuccess(this);
+													this.is_init_success = true;
+												}
 											}
 											
 										}
