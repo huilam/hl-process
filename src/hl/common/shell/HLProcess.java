@@ -23,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.63";
+	private final static String _VERSION = "HLProcess alpha v0.64";
 	
 	public static enum ProcessState 
 	{ 
@@ -471,11 +471,12 @@ public class HLProcess extends HLProcessCmd implements Runnable
 											}
 											else
 											{
-												if(System.currentTimeMillis()-lProcStartMs>500)
+												if(System.currentTimeMillis()-lProcStartMs<200)
 												{
-													onProcessInitSuccess(this);
-													this.is_init_success = true;
+													Thread.sleep(200);
 												}
+												this.is_init_success = true;
+												onProcessInitSuccess(this);
 											}
 											
 										}
