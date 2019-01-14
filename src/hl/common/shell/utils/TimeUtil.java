@@ -62,7 +62,7 @@ public class TimeUtil{
 			lTmp = lTmp % _SEC_ms;
 		}
 		
-		if(lTmp>0)
+		if(lTmp>=0)
 		{
 			sb.append(lTmp).append("ms ");
 		}

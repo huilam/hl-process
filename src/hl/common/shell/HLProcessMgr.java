@@ -126,9 +126,9 @@ public class HLProcessMgr
 							if(p!=null)
 							{
 								long lterminateStartMs = System.currentTimeMillis();
-								try {
-									if(p.isShutdownAllOnTermination() && terminatingProcess==null)
-									{
+								if(p.isShutdownAllOnTermination() && terminatingProcess==null)
+								{
+									try {
 										terminatingProcess = p;
 										System.out.println();
 										System.out.println("                   #######");
@@ -161,11 +161,11 @@ public class HLProcessMgr
 										System.out.println("[TERMINATE] "+p.getProcessId()+" initial termination ...");
 										terminateAllProcesses();
 										waitForAllProcessesToBeTerminated(terminatingProcess);
+									}finally
+									{
+										System.out.println("[TERMINATE] Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
+										System.out.println();
 									}
-								}finally
-								{
-									System.out.println("[TERMINATE] Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
-									System.out.println();
 								}
 							}
 						}
