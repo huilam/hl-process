@@ -61,31 +61,32 @@ public class HLProcessMgr
 						public void onProcessError(HLProcess p, Throwable e) {
 						}
 
-						public void onProcessInitSuccess(HLProcess p) {
+						public void onProcessInitSuccess(HLProcess p) 
+						{
+							if(is_terminating)
+								return;
 							
 							if(p.getCurProcessState().isAtLeast(ProcessState.STARTED))
 							{
-								
-								
 								mapInitSuccess.put(p.getProcessId(), System.currentTimeMillis());
 								if(mapInitSuccess.size()==getAllProcesses().length)
 								{
 									System.out.println();
+									System.out.println("                            OOOOOOOOOO");
+									System.out.println("                        OOOOOOOOOOOOOOOOOO");
+									System.out.println("                     OOOOOO  OOOOOOOO  OOOOOO");
+									System.out.println("                   OOOOOO      OOOO      OOOOOO");
+									System.out.println("                 OOOOOOOO      OOOO      OOOOOOOO");
+									System.out.println("                OOOOOOOOOO    OOOOOO    OOOOOOOOOO");
+									System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+									System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+									System.out.println("               OOOO  OOOOOOOOOOOOOOOOOOOOOOOO  OOOO");
+									System.out.println("                OOOO  OOOOOOOOOOOOOOOOOOOOOO  OOOO");
+									System.out.println("                 OOOO   OOOOOOOOOOOOOOOOOOO  OOOO");
+									System.out.println("                   OOOOO   OOOOOOOOOOOOOO   OOOO");
+									System.out.println("                     OOOOOO   OOOOOOOO   OOOOOO");
+									System.out.println("                        OOOOOO        OOOOOO");
 									System.out.println("                            OOOOOOOOOOO");
-									System.out.println("                        OOOOOOOOOOOOOOOOOOO");
-									System.out.println("                     OOOOOO  OOOOOOOOO  OOOOOO");
-									System.out.println("                   OOOOOO      OOOOO      OOOOOO");
-									System.out.println("                 OOOOOOOO      OOOOO      OOOOOOOO");
-									System.out.println("                OOOOOOOOOO    OOOOOOO    OOOOOOOOOO");
-									System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-									System.out.println("               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-									System.out.println("               OOOO  OOOOOOOOOOOOOOOOOOOOOOOOO  OOOO");
-									System.out.println("                OOOO  OOOOOOOOOOOOOOOOOOOOOOO  OOOO");
-									System.out.println("                 OOOO   OOOOOOOOOOOOOOOOOOOO  OOOO");
-									System.out.println("                   OOOOO   OOOOOOOOOOOOOOO   OOOO");
-									System.out.println("                     OOOOOO   OOOOOOOOO   OOOOOO");
-									System.out.println("                        OOOOOO         OOOOOO");
-									System.out.println("                            OOOOOOOOOOOO");
 									System.out.println();
 									System.out.println();
 									System.out.println("   ######  ########  ######   #######  ######## ######## #######");
@@ -124,11 +125,47 @@ public class HLProcessMgr
 							is_terminating = true;
 							if(p!=null)
 							{
-								if(p.isShutdownAllOnTermination() && terminatingProcess==null)
+								long lterminateStartMs = System.currentTimeMillis();
+								try {
+									if(p.isShutdownAllOnTermination() && terminatingProcess==null)
+									{
+										terminatingProcess = p;
+										System.out.println();
+										System.out.println("                   #######");
+										System.out.println("               ###############");
+										System.out.println("             #####################");
+										System.out.println("		    #######################");
+										System.out.println("		   #########################");
+										System.out.println("		  ###########################");
+										System.out.println("		  ###########################");
+										System.out.println("		  ########   #####   ########");
+										System.out.println("		  ######      ###       #####");
+										System.out.println("		   ####       ###       ####");
+										System.out.println("		   ####      #####      ####");
+										System.out.println("		    ##########   ##########");
+										System.out.println("			 #########   #########");
+										System.out.println("			   #################");
+										System.out.println("			    ###############");
+										System.out.println("	 ###        #### # # # ####       ###");
+										System.out.println("	#####        #############       #####");
+										System.out.println("     #######      ###########     ########");
+										System.out.println("   ##############    #####    ##############");
+										System.out.println("  ####################   ##################");
+										System.out.println("  ###      ############### ######");
+										System.out.println("	  	   #### ###############");
+										System.out.println("    ################## ###################");
+										System.out.println("   ##############           ##############");
+										System.out.println("	#######                      ########");
+										System.out.println("    ####                         #####");
+										System.out.println();
+										System.out.println("[TERMINATE] "+p.getProcessId()+" initial termination ...");
+										terminateAllProcesses();
+										waitForAllProcessesToBeTerminated(terminatingProcess);
+									}
+								}finally
 								{
-									terminatingProcess = p;
-									terminateAllProcesses();
-									waitForAllProcessesToBeTerminated(terminatingProcess);
+									System.out.println("[TERMINATE] Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
+									System.out.println();
 								}
 							}
 						}
