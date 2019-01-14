@@ -25,6 +25,7 @@ public class HLProcessConfig {
 
 	//-- SHELL
 	public static String _PROP_KEY_SHELL						= "shell.";
+	public static String _PROP_KEY_SHELL_CMD_NO_OS	 			= _PROP_KEY_SHELL+"command";
 	public static String _PROP_KEY_SHELL_CMD	 				= _PROP_KEY_SHELL+"command.{os.name}";
 	public static String _PROP_KEY_SHELL_CMD_END_REGEX 			= _PROP_KEY_SHELL+"command.end.regex";
 	public static String _PROP_KEY_SHELL_CMD_IDLE_TIMEOUT_MS 	= _PROP_KEY_SHELL+"command.idle.timeout.ms";
@@ -35,7 +36,8 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_SHELL_OUTPUT_CONSOLE 		= _PROP_KEY_SHELL+"output.console";
 	public static String _PROP_KEY_SHELL_RUNAS_DAEMON 			= _PROP_KEY_SHELL+"runas.daemon";
 	public static String _PROP_KEY_SHELL_DEF2_SCRIPT_DIR 		= _PROP_KEY_SHELL+"default.to.script.dir";
-	
+
+	public static String _PROP_KEY_SHELL_TERMINATE_CMD_NO_OS		= _PROP_KEY_SHELL+"terminate.command";
 	public static String _PROP_KEY_SHELL_TERMINATE_CMD				= _PROP_KEY_SHELL+"terminate.command.{os.name}";
 	public static String _PROP_KEY_SHELL_TERMINATE_END_REGEX		= _PROP_KEY_SHELL+"terminate.end.regex";
 	public static String _PROP_KEY_SHELL_TERMINATE_IDLE_TIMEOUT_MS	= _PROP_KEY_SHELL+"terminate.idle.timeout.ms";
@@ -291,10 +293,18 @@ public class HLProcessConfig {
 				p.setRunAsDaemon("true".equalsIgnoreCase(sConfigVal));
 			}
 			// 
-			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_CMD);
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_CMD_NO_OS);
 			if(sConfigVal!=null)
 			{
 				p.setProcessCommand(splitCommands(p, sConfigVal));
+			}
+			else
+			{
+				sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_CMD);
+				if(sConfigVal!=null)
+				{
+					p.setProcessCommand(splitCommands(p, sConfigVal));
+				}
 			}
 			// 
 			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_CMD_END_REGEX);
@@ -322,10 +332,18 @@ public class HLProcessConfig {
 				p.setProcessStartDelayMs(lVal);
 			}
 			//
-			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_TERMINATE_CMD);
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_TERMINATE_CMD_NO_OS);
 			if(sConfigVal!=null)
 			{
 				p.setTerminateCommand(sConfigVal);
+			}
+			else
+			{
+				sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_TERMINATE_CMD);
+				if(sConfigVal!=null)
+				{
+					p.setTerminateCommand(sConfigVal);
+				}
 			}
 			//
 			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_TERMINATE_END_REGEX);
