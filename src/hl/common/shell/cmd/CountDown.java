@@ -39,9 +39,9 @@ public class CountDown
 		
 		if(isSyntaxErr)
 		{
-			System.out.println("Syntax  : CountDownClock <countdown-number> <time-unit>");
-			System.out.println("Example : CountDownClock 20 s");
-			System.out.println("        : CountDownClock 1 m");
+			System.out.println("Syntax  : CountDown <countdown-number> <time-unit>");
+			System.out.println("Example : CountDown 20 s");
+			System.out.println("        : CountDown 1 m");
 		}
 		
 	}
