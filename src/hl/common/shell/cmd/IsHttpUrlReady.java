@@ -6,7 +6,7 @@ import java.text.SimpleDateFormat;
 
 import hl.common.shell.utils.TimeUtil;
 
-public class TestHttpUrl {
+public class IsHttpUrlReady {
 
 	public static boolean isUrlReady(String aURL, long lTimeoutSecs)
 	{
@@ -31,7 +31,7 @@ public class TestHttpUrl {
 				String sOutput = df.format(System.currentTimeMillis())+"  "+aURL+" : "+iRespCode;
 				if(isOK)
 				{
-					System.out.println("[TestHttpUrl-OK] "+sOutput);
+					System.out.println("[IsHttpUrlReady-OK] "+sOutput);
 				}
 				else
 				{
@@ -59,14 +59,35 @@ public class TestHttpUrl {
 	
 	public static void main(String args[])
 	{
-		String sUrl = args[0];
-		int sTimeoutSecs = Integer.parseInt(args[1]);
+		boolean isSyntaxErr = true;
 		
-		if(!sUrl.startsWith("http"))
+		if(args.length==2)
 		{
-			sUrl = "http://"+sUrl;
+			String sUrl = args[0];
+			int iTimeoutSecs = Integer.parseInt(args[1]);
+			
+			if(!sUrl.startsWith("http"))
+			{
+				sUrl = "http://"+sUrl;
+			}
+			
+			try {
+				isSyntaxErr = false;
+				isUrlReady(sUrl, iTimeoutSecs);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+				isSyntaxErr = true;
+			}			
 		}
-		isUrlReady(sUrl, sTimeoutSecs);
+		
+		if(isSyntaxErr)
+		{
+			System.out.println("Syntax  : IsHttpUrlReady <url> <timeout-secs>");
+			System.out.println("Example : IsHttpUrlReady www.nec.com 30");
+			System.out.println("        : IsHttpUrlReady http://www.nec.com/index.html 40");
+		}
 	}
 	
 }
