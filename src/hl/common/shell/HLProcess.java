@@ -23,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.66";
+	private final static String _VERSION = "HLProcess alpha v0.67";
 	
 	public static enum ProcessState 
 	{ 
@@ -315,7 +315,21 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					if(d!=null)
 					{
 						String sPath = d.getCodeSource().getLocation().getFile();
-						pb.directory(new File(sPath));
+						File folder = new File(sPath);
+						
+						if(folder.isDirectory())
+						{
+							pb.directory(folder);
+							System.out.println("Changing working directory to "+pb.directory());
+						}
+						else if(folder.isFile())
+						{
+							if(folder.getParentFile().isDirectory())
+							{
+								pb.directory(folder.getParentFile());
+								System.out.println("Changing working directory to "+pb.directory());
+							}
+						}
 					}
 				}
 				pb.redirectErrorStream(true);
