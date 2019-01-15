@@ -23,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.67";
+	private final static String _VERSION = "HLProcess alpha v0.68";
 	
 	public static enum ProcessState 
 	{ 
