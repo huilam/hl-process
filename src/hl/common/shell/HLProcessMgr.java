@@ -11,8 +11,7 @@ import java.util.logging.Logger;
 import hl.common.shell.HLProcess;
 import hl.common.shell.HLProcessConfig;
 import hl.common.shell.listeners.HLProcessEvent;
-import hl.common.shell.plugins.output.DefaultStateOutput;
-import hl.common.shell.plugins.output.IProcessStateOutput;
+import hl.common.shell.plugins.output.StateOutput;
 import hl.common.shell.utils.TimeUtil;
 import hl.common.shell.HLProcess.ProcessState;
 
@@ -21,7 +20,6 @@ public class HLProcessMgr
 	private HLProcessConfig procConfig = null;
 	private static Logger logger  	= Logger.getLogger(HLProcessMgr.class.getName());
 	
-	private IProcessStateOutput stateOutput = null;
 	private long startTimestamp	= 0;
 	private HLProcessEvent event 	= null;
 	private boolean is_terminating 	= false;
@@ -30,9 +28,9 @@ public class HLProcessMgr
 		
 	public HLProcessMgr(String aPropFileName)
 	{
-		stateOutput = new DefaultStateOutput();
-		try {
-			
+		
+		StateOutput.getStateOutput(ProcessState.IDLE);
+		try {		
 			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 				@Override
 				public void run() {
@@ -76,7 +74,7 @@ public class HLProcessMgr
 								if(mapInitSuccess.size()==getAllProcesses().length)
 								{
 									System.out.println();
-									System.out.println(stateOutput.getStateOutput(ProcessState.STARTED));
+									System.out.println(StateOutput.getStateOutput(ProcessState.STARTED));
 									System.out.println();
 									int i = 1;
 									SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
@@ -112,7 +110,7 @@ public class HLProcessMgr
 									try {
 										terminatingProcess = p;
 										System.out.println();
-										System.out.println(stateOutput.getStateOutput(ProcessState.TERMINATED));
+										System.out.println(StateOutput.getStateOutput(ProcessState.TERMINATED));
 										System.out.println();
 										System.out.println("[TERMINATE] "+p.getProcessId()+" initial termination ...");
 										terminateAllProcesses();

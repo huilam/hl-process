@@ -2,7 +2,7 @@ package hl.common.shell.plugins.output;
 
 import hl.common.shell.HLProcess.ProcessState;
 
-public class DefaultStateOutput implements IProcessStateOutput
+public class StateOutput 
 {
 	private static String _SMILEY 	= null;
 	private static String _SKULL 	= null;
@@ -65,8 +65,8 @@ public class DefaultStateOutput implements IProcessStateOutput
 		_SKULL = sb.toString();
 	}
 	
-	@Override
-	public String getStateOutput(ProcessState aProcessState) {
+
+	public static String getStateOutput(ProcessState aProcessState) {
 		if(aProcessState!=null)
 		{
 			if(aProcessState.getCode() == ProcessState.STARTED.getCode())
