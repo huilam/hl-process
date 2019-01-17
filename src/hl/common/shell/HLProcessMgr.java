@@ -20,9 +20,9 @@ public class HLProcessMgr
 	private HLProcessConfig procConfig = null;
 	private static Logger logger  	= Logger.getLogger(HLProcessMgr.class.getName());
 	
-	private long startTimestamp	= 0;
-	private HLProcessEvent event 	= null;
-	private boolean is_terminating 	= false;
+	private long startTimestamp			= 0;
+	private HLProcessEvent event 		= null;
+	private boolean is_terminating_all 	= false;
 	private HLProcess terminatingProcess = null;
 	private Map<String, Long> mapInitSuccess = new LinkedHashMap<String, Long>();
 		
@@ -65,7 +65,7 @@ public class HLProcessMgr
 
 						public void onProcessInitSuccess(HLProcess p) 
 						{
-							if(is_terminating)
+							if(is_terminating_all)
 								return;
 							
 							if(p.getCurProcessState().isAtLeast(ProcessState.STARTED))
@@ -101,12 +101,12 @@ public class HLProcessMgr
 						
 						public void onProcessTerminate(HLProcess p) 
 						{
-							is_terminating = true;
 							if(p!=null)
 							{
 								long lterminateStartMs = System.currentTimeMillis();
 								if(p.isShutdownAllOnTermination() && terminatingProcess==null)
 								{
+									is_terminating_all = true;
 									try {
 										terminatingProcess = p;
 										System.out.println();
@@ -335,10 +335,10 @@ public class HLProcessMgr
 	{
 		this.startTimestamp = System.currentTimeMillis();
 
-		if(this.is_terminating)
+		if(this.is_terminating_all)
 			return;
 		
-		this.is_terminating = false;
+		this.is_terminating_all = false;
 		
 		long lStart = System.currentTimeMillis();
 		int lPendingStart = procConfig.getProcesses().length;

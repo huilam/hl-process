@@ -23,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.68a";
+	private final static String _VERSION = "HLProcess alpha v0.68b";
 	
 	public static enum ProcessState 
 	{ 
@@ -307,6 +307,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					if(fileDir!=null)
 					{
 						pb.directory(fileDir);
+						logger.log(Level.INFO, "["+aCommands[0]+"] Auto default to script directory : "+pb.directory());
 					}
 				}
 				else
@@ -643,11 +644,22 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		String sInitErrMsg = aHLProcess.getInitErrorMessage();
 		if(sInitErrMsg!=null && sInitErrMsg.trim().length()>0)
 		{
-			String sErrMsg = "["+aHLProcess.getProcessId()+"] init.error.message : "+sInitErrMsg;
-			logger.log(Level.SEVERE, sErrMsg);
+			StringBuffer sbLine = new StringBuffer();
+			int iLen = aHLProcess.getProcessId().length()+sInitErrMsg.length()+14;
+			for(int i=0; i<iLen; i++)
+			{
+				sbLine.append("#");
+			}
+
+			StringBuffer sbMsg = new StringBuffer();
+			sbMsg.append(sbLine.toString()).append("\n");
+			sbMsg.append("# [").append(aHLProcess.getProcessId()).append("] error: ").append(sInitErrMsg).append("\n");
+			sbMsg.append(sbLine.toString()).append("\n");
+			
+			logger.log(Level.SEVERE, "\n"+sbMsg.toString());
 			if(isOutputConsole())
 			{
-				System.out.println(sErrMsg);
+				System.out.println(sbMsg.toString());
 			}
 		}
 	}
