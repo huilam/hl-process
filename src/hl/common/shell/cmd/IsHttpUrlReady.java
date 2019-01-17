@@ -8,11 +8,18 @@ import hl.common.shell.utils.TimeUtil;
 
 public class IsHttpUrlReady {
 
-	public static boolean isUrlReady(String aURL, long lTimeoutSecs)
+	public static boolean isUrlReady(String aURL, long lTimeoutSecs, long lCheckIntervalSecs)
 	{
 		boolean isOK = false;
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss.SSS");
 		HttpURLConnection conn 	= null;
+		
+		if(lCheckIntervalSecs>1000)
+		{
+			lCheckIntervalSecs -= 5;
+		}
+		
+		System.out.println("lCheckIntervalSecs="+lCheckIntervalSecs);
 		try {
 			long lStartTimeMs = System.currentTimeMillis();
 			int iRespCode  = 404;
@@ -45,7 +52,7 @@ public class IsHttpUrlReady {
 						return false;
 					}
 				}
-				Thread.sleep(1000);
+				Thread.sleep(lCheckIntervalSecs);
 			}
 			
 		}
@@ -61,10 +68,16 @@ public class IsHttpUrlReady {
 	{
 		boolean isSyntaxErr = true;
 		
-		if(args.length==2)
+		if(args.length==2 || args.length==3)
 		{
 			String sUrl = args[0];
 			int iTimeoutSecs = Integer.parseInt(args[1]);
+			int iCheckIntervalSecs = 1000;
+			
+			if(args.length==3)
+			{
+				iCheckIntervalSecs = Integer.parseInt(args[2])*1000;
+			}
 			
 			if(!sUrl.startsWith("http"))
 			{
@@ -73,7 +86,7 @@ public class IsHttpUrlReady {
 			
 			try {
 				isSyntaxErr = false;
-				isUrlReady(sUrl, iTimeoutSecs);
+				isUrlReady(sUrl, iTimeoutSecs, iCheckIntervalSecs);
 			}
 			catch(Exception ex)
 			{
@@ -84,9 +97,10 @@ public class IsHttpUrlReady {
 		
 		if(isSyntaxErr)
 		{
-			System.out.println("Syntax  : IsHttpUrlReady <url> <timeout-secs>");
+			System.out.println("Syntax  : IsHttpUrlReady <url> <timeout-secs> [optional-check-interval-secs]");
 			System.out.println("Example : IsHttpUrlReady www.nec.com 30");
 			System.out.println("        : IsHttpUrlReady http://www.nec.com/index.html 40");
+			System.out.println("        : IsHttpUrlReady www.nec.com/index.html 60 3");
 		}
 	}
 	
