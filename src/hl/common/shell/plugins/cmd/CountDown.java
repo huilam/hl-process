@@ -1,4 +1,4 @@
-package hl.common.shell.cmd;
+package hl.common.shell.plugins.cmd;
 
 import java.text.SimpleDateFormat;
 

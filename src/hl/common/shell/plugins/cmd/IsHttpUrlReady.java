@@ -1,4 +1,4 @@
-package hl.common.shell.cmd;
+package hl.common.shell.plugins.cmd;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -19,7 +19,6 @@ public class IsHttpUrlReady {
 			lCheckIntervalSecs -= 5;
 		}
 		
-		System.out.println("lCheckIntervalSecs="+lCheckIntervalSecs);
 		try {
 			long lStartTimeMs = System.currentTimeMillis();
 			int iRespCode  = 404;
