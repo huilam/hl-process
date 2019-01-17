@@ -19,6 +19,7 @@ public class HLProcessCmd
 	private Pattern patt_init_failed	= null;
 	private Pattern patt_init_success	= null;
 	private long init_timeout_ms		= 0;
+	private String init_error_message	= null;
 	
 	private long delay_start_ms			= 0;
 	
@@ -258,6 +259,17 @@ public class HLProcessCmd
 			return null;
 		else
 			return this.patt_init_success.pattern();
+	}
+	
+
+	public void setInitErrorMessage(String aRegex)
+	{
+		this.init_error_message = aRegex;
+	}
+	
+	public String getInitErrorMessage()
+	{
+		return this.init_error_message;
 	}
 	
 	public void setInitFailedRegex(String aRegex)

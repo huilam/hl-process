@@ -23,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.68";
+	private final static String _VERSION = "HLProcess alpha v0.68a";
 	
 	public static enum ProcessState 
 	{ 
@@ -320,14 +320,14 @@ public class HLProcess extends HLProcessCmd implements Runnable
 						if(folder.isDirectory())
 						{
 							pb.directory(folder);
-							System.out.println("Changing working directory to "+pb.directory());
+							logger.log(Level.INFO, "["+aCommands[0]+"] Changing working directory to "+pb.directory());
 						}
 						else if(folder.isFile())
 						{
 							if(folder.getParentFile().isDirectory())
 							{
 								pb.directory(folder.getParentFile());
-								System.out.println("Changing working directory to "+pb.directory());
+								logger.log(Level.INFO, "["+aCommands[0]+"] Changing working directory to "+pb.directory());
 							}
 						}
 					}
@@ -452,9 +452,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 											{
 												if(TimeUtil.isTimeout(lProcStartMs, getInitTimeoutMs()))
 												{
+													onProcessInitTimeout(this);
 													String sErr = sPrefix+"Init timeout ! "+TimeUtil.milisec2Words(System.currentTimeMillis()-lProcStartMs)+" - "+getProcessCommand();
 													this.is_init_success = false;
 													logger.log(Level.SEVERE, sErr);
+													proc.destroy();
 													break;
 												}
 											}
@@ -465,6 +467,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 												this.is_init_failed =  m.find();
 												if(this.is_init_failed)
 												{
+													onProcessInitFailed(this);
 													String sErr = sPrefix + "init_error - Elapsed: "+TimeUtil.milisec2Words(System.currentTimeMillis()-lProcStartMs);
 													logger.log(Level.SEVERE, sErr);
 													proc.destroy();
@@ -485,9 +488,9 @@ public class HLProcess extends HLProcessCmd implements Runnable
 											}
 											else
 											{
-												if(System.currentTimeMillis()-lProcStartMs<200)
+												if(System.currentTimeMillis()-lProcStartMs<100)
 												{
-													Thread.sleep(200);
+													Thread.sleep(100);
 												}
 												this.is_init_success = true;
 												onProcessInitSuccess(this);
@@ -536,6 +539,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 						}
 						finally
 						{
+							if(!this.is_init_success)
+							{
+								onProcessInitFailed(this);
+							}
+							
 							if(getCurProcessState().isBefore(ProcessState.STOPPING))
 							{
 								setCurProcessState(ProcessState.STOPPING);
@@ -614,7 +622,38 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	{
 		this.listener = event;
 	}
-
+	
+	private void onProcessInitTimeout(HLProcess aHLProcess)
+	{
+		setCurProcessState(ProcessState.START_INIT_TIMEOUT);
+		printInitErrMsg(aHLProcess);		
+	}
+	
+	private void onProcessInitFailed(HLProcess aHLProcess)
+	{
+		if(aHLProcess.getCurProcessState().isBefore(ProcessState.START_INIT_FAILED))
+		{
+			setCurProcessState(ProcessState.START_INIT_FAILED);
+			printInitErrMsg(aHLProcess);
+		}
+	}
+	
+	private void printInitErrMsg(HLProcess aHLProcess)
+	{
+		String sInitErrMsg = aHLProcess.getInitErrorMessage();
+		if(sInitErrMsg!=null && sInitErrMsg.trim().length()>0)
+		{
+			String sErrMsg = "["+aHLProcess.getProcessId()+"] init.error.message : "+sInitErrMsg;
+			logger.log(Level.SEVERE, sErrMsg);
+			if(isOutputConsole())
+			{
+				System.out.println(sErrMsg);
+			}
+		}
+	}
+	
+	
+	
 	private void onProcessInitSuccess(HLProcess aHLProcess)
 	{
 		setCurProcessState(ProcessState.STARTED);

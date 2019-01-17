@@ -50,7 +50,8 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_INIT_TIMEOUT_MS 		= _PROP_KEY_INIT+"timeout.ms";
 	public static String _PROP_KEY_INIT_SUCCESS_REGEX	= _PROP_KEY_INIT+"success.regex";
 	public static String _PROP_KEY_INIT_FAILED_REGEX	= _PROP_KEY_INIT+"failed.regex";
-
+	public static String _PROP_KEY_INIT_ERROR_MSG		= _PROP_KEY_INIT+"error.message";
+	
 	//-- DEPENDANCE
 	public static String _PROP_KEY_DEP					= "dependance.";
 	public static String _PROP_KEY_DEP_PROCESSES_LOCAL	= _PROP_KEY_DEP+"processes.local";
@@ -378,6 +379,12 @@ public class HLProcessConfig {
 			}
 
 			//INIT
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_INIT_ERROR_MSG);
+			if(sConfigVal!=null)
+			{
+				p.setInitErrorMessage(sConfigVal);
+			}
+			//
 			sConfigVal = mapProcessConfig.get(_PROP_KEY_INIT_SUCCESS_REGEX);
 			if(sConfigVal!=null)
 			{
@@ -515,41 +522,53 @@ public class HLProcessConfig {
 		return c.toArray(new HLProcess[c.size()]);
 	}
 	
-	//--
-	/** sample 'process.properties'
-	//--
-	# process.@.disabled=false
-	#
-	# process.@.shell.start.delay.ms=
-	# process.@.shell.runas.daemon=false
-	# process.@.shell.default.to.script.dir=false
-	
-	# process.@.shell.command.block=
-	# process.@.shell.command.end.regex=
-	# process.@.shell.command.win=
-	# process.@.shell.command.linux=
-	# process.@.shell.command.mac=
-	
-	# process.@.shell.output.filename=
-	# process.@.shell.output.console=false
-	
-	# process.@.shell.terminate.command.win=
-	# process.@.shell.terminate.command.linux=
-	# process.@.shell.terminate.command.mac=
-	# process.@.shell.terminate.end.regex=
-	# process.@.shell.terminate.idle.timeout.ms=18000000 (5 min)
+	public static String generateCfgTemp()
+	{
+		StringBuffer sb = new StringBuffer();
+		String sNewLine = "\n";
+		sb.append("//--").append(sNewLine);
+		sb.append("/** sample 'process.properties'").append(sNewLine);
+		sb.append("//--").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_DISABLED).append("=false").append(sNewLine);
+		sb.append("#").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_START_DELAY).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_RUNAS_DAEMON).append("=false").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_DEF2_SCRIPT_DIR).append("=false").append(sNewLine);
+		sb.append("#").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_CMD_BLOCK).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_CMD_END_REGEX).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".win=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".linux=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".mac=").append(sNewLine);
+		sb.append("#").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_OUTPUT_FILENAME).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_OUTPUT_CONSOLE).append("=false").append(sNewLine);
+		sb.append("#").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_TERMINATE_CMD_NO_OS).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_TERMINATE_CMD_NO_OS).append(".win=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_TERMINATE_CMD_NO_OS).append(".linux=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_TERMINATE_CMD_NO_OS).append(".mac=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_TERMINATE_END_REGEX).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_TERMINATE_IDLE_TIMEOUT_MS).append("=18000000 (5 min)").append(sNewLine);
+	    sb.append("#").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_SHUTDOWN_ALL_ON_TEMINATE).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_SHUTDOWN_ALL_TIMEOUT_MS).append("=").append(sNewLine);
+		sb.append("#").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_INIT_TIMEOUT_MS).append("=18000000 (5 min)").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_INIT_SUCCESS_REGEX).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_INIT_FAILED_REGEX).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_INIT_ERROR_MSG).append("=").append(sNewLine);
+		sb.append("#").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_DEP_PROCESSES_LOCAL).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_DEP_PROCESSES_REMOTE).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_DEP_CHK_INTERVAL_MS).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_DEP_TIMEOUT_MS).append("=18000000 (5 min)").append(sNewLine);
+		sb.append("//--").append(sNewLine);
+		sb.append("**/").append(sNewLine);
+		
+		return sb.toString();
+	}
 
-	# process.@.shell.shutdown.all.on.termination=false
-	# process.@.shell.shutdown.all.timeout.ms=30000
-	#
-	# process.@.init.timeout.ms=
-	# process.@.init.success.regex=
-	# process.@.init.failed.regex=
-	#
-	# process.@.dependance.processes.local=
-	# process.@.dependance.processes.remote=
-	# process.@.dependance.check.interval.ms=
-	# process.@.dependance.timeout.ms=
-	//--
-	**/
+			
 }
