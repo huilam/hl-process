@@ -23,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.68b";
+	private final static String _VERSION = "HLProcess alpha v0.68c";
 	
 	public static enum ProcessState 
 	{ 
@@ -66,6 +66,10 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		public boolean isAtLeast(ProcessState aProcessState)
 		{
 			return getCode() >= aProcessState.getCode();
+		}
+		public boolean isBetweenIncl(ProcessState aProcessState, ProcessState aProcessState2)
+		{
+			return (getCode() >= aProcessState.getCode()) && (getCode() <= aProcessState2.getCode());
 		}
 	};
 		
@@ -179,6 +183,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		return (proc!=null && proc.isAlive()) || (thread!=null && thread.isAlive());
 	}
 	
+	public boolean isInitSuccess()
+	{
+		return this.is_init_success;
+	}
+	
 	public boolean isStarted()
 	{
 		return this.run_start_timestamp>0 && getCurProcessState().isAtLeast(ProcessState.STARTED);
@@ -242,7 +251,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 				{
 					HLProcess d = iter.next();
 					
-					if(d.isStarted())
+					if(d.isInitSuccess())
 					{
 						iter.remove();
 						continue;
@@ -292,22 +301,26 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		return isWaitDepOk;
 	}
 	
-	protected static ProcessBuilder initProcessBuilder(final String aCommands[], boolean isDefToScriptDir)
+	protected static ProcessBuilder initProcessBuilder(final HLProcess aHLProcess)
 	{
 		ProcessBuilder pb = null;
-		if(aCommands!=null)
+		
+		String[] sCommands = aHLProcess.getCommands();
+		String sPrefix = "["+aHLProcess.getProcessId()+"]";
+				
+		if(sCommands!=null)
 		{
-			String sCommandLine = String.join(" ",aCommands);
+			String sCommandLine = String.join(" ",sCommands);
 			if(sCommandLine.trim().length()>0)
 			{
-				pb = new ProcessBuilder(aCommands);
-				if(isDefToScriptDir)
+				pb = new ProcessBuilder(sCommands);
+				if(aHLProcess.isDefaultToScriptDir())
 				{
 					File fileDir = getCommandScriptDir(sCommandLine);
 					if(fileDir!=null)
 					{
 						pb.directory(fileDir);
-						logger.log(Level.INFO, "["+aCommands[0]+"] Auto default to script directory : "+pb.directory());
+						logger.log(Level.INFO, sPrefix+" Auto default to script directory : "+pb.directory());
 					}
 				}
 				else
@@ -321,14 +334,14 @@ public class HLProcess extends HLProcessCmd implements Runnable
 						if(folder.isDirectory())
 						{
 							pb.directory(folder);
-							logger.log(Level.INFO, "["+aCommands[0]+"] Changing working directory to "+pb.directory());
+							logger.log(Level.INFO, sPrefix+" Changing working directory to "+pb.directory());
 						}
 						else if(folder.isFile())
 						{
 							if(folder.getParentFile().isDirectory())
 							{
 								pb.directory(folder.getParentFile());
-								logger.log(Level.INFO, "["+aCommands[0]+"] Changing working directory to "+pb.directory());
+								logger.log(Level.INFO, sPrefix+" Changing working directory to "+pb.directory());
 							}
 						}
 					}
@@ -360,7 +373,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 				
 				if(isNotStarted() && isDepOk)
 				{
-					ProcessBuilder pb = initProcessBuilder(getCommands(), isDefaultToScriptDir());
+					ProcessBuilder pb = initProcessBuilder(this);
 					try {
 						proc = pb.start();
 					} catch (IOException e1) {
