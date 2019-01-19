@@ -20,14 +20,15 @@ public class HLProcessMgr
 	private HLProcessConfig procConfig = null;
 	private static Logger logger  	= Logger.getLogger(HLProcessMgr.class.getName());
 	
-	private long startTimestamp			= 0;
-	private HLProcessEvent event 		= null;
-	private boolean is_terminating_all 	= false;
-	private HLProcess terminatingProcess = null;
-	private Map<String, Long> mapInitSuccess = new LinkedHashMap<String, Long>();
+	private long startTimestamp					= 0;
+	private HLProcessEvent event 				= null;
+	private boolean is_terminating_all 			= false;
+	private HLProcess terminatingProcess 		= null;
+	private Map<String, Long> mapInitSuccess 	= null;
 		
 	public HLProcessMgr(String aPropFileName)
 	{
+		mapInitSuccess = new LinkedHashMap<String, Long>();
 		
 		StateOutput.getStateOutput(ProcessState.IDLE);
 		try {		
@@ -70,7 +71,14 @@ public class HLProcessMgr
 							
 							if(p.getCurProcessState().isAtLeast(ProcessState.STARTED))
 							{
-								mapInitSuccess.put(p.getProcessId(), System.currentTimeMillis());
+								/**
+								if(mapInitSuccess==null)
+								{
+									mapInitSuccess = new LinkedHashMap<String, Long>();
+								}
+								**/
+								mapInitSuccess.put(p.getProcessId(), new Long(System.currentTimeMillis()));
+								
 								if(mapInitSuccess.size()==getAllProcesses().length)
 								{
 									System.out.println();
@@ -82,7 +90,10 @@ public class HLProcessMgr
 									StringBuffer sb = new StringBuffer();
 									for(String sProcID : mapInitSuccess.keySet())
 									{
-										long lInitTimeStamp = mapInitSuccess.get(sProcID);
+										Long lInitTimeStamp = mapInitSuccess.get(sProcID);
+										
+										if(lInitTimeStamp==null)
+											lInitTimeStamp = 0L;
 										
 										sb.setLength(0);
 										sb.append(i);
@@ -90,7 +101,9 @@ public class HLProcessMgr
 										{
 											sb.insert(0, " ");
 										}
-										System.out.println("[STARTED] "+sb.toString()+"."+sProcID+" started at "+df.format(lInitTimeStamp));
+										
+										String sFormattedStartTime = lInitTimeStamp==0?"0":df.format(lInitTimeStamp);
+										System.out.println("[STARTED] "+sb.toString()+"."+sProcID+" started at "+sFormattedStartTime);
 										i++;
 									}
 									System.out.println("[STARTED] Total Startup Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-getStartTimestamp()));
