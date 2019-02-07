@@ -13,7 +13,7 @@
 			<classpath refid="compile.classpath"/>
 		</javac>
 		<copy todir="${build}"> 
-			<fileset dir="${src}" includes="**.ascii" />
+			<fileset dir="${src}" includes="**\**.ascii" />
 		</copy>
 
 	</target>

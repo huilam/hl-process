@@ -10,8 +10,8 @@ public class StateOutput
 	
 	static
 	{
-		_SMILEY = FileUtil.loadContent("/STARTED.ascii");
-		_SKULL 	= FileUtil.loadContent("/TERIMATED.ascii");
+		_SMILEY = FileUtil.loadContent("/hl/common/shell/plugins/output/STARTED.ascii");
+		_SKULL 	= FileUtil.loadContent("/hl/common/shell/plugins/output/TERIMATED.ascii");
 	}
 	
 
