@@ -11,7 +11,7 @@ public class StateOutput
 	static
 	{
 		_SMILEY = FileUtil.loadContent("/STARTED.ascii");
-		_SKULL = FileUtil.loadContent("/TERIMATED.ascii");
+		_SKULL 	= FileUtil.loadContent("/TERIMATED.ascii");
 	}
 	
 
