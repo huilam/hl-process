@@ -1,32 +1,42 @@
 package hl.common.shell.plugins.output;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import hl.common.shell.HLProcess.ProcessState;
 import hl.common.shell.utils.FileUtil;
 
 public class StateOutput 
 {
-	private static String _SMILEY 	= null;
-	private static String _SKULL 	= null;
+	private static Map<String, String> mapStateOutput = new HashMap<String, String>();
 	
-	static
-	{
-		_SMILEY = FileUtil.loadContent("/hl/common/shell/plugins/output/STARTED.ascii");
-		_SKULL 	= FileUtil.loadContent("/hl/common/shell/plugins/output/TERIMATED.ascii");
-	}
-	
+	private static String asciiPath = "/hl/common/shell/plugins/output/";
 
 	public static String getStateOutput(ProcessState aProcessState) {
+		
+		String sOutput = null;
 		if(aProcessState!=null)
 		{
-			if(aProcessState.getCode() == ProcessState.STARTED.getCode())
+			
+			String sState = aProcessState.toString().toUpperCase();
+			
+			sOutput = mapStateOutput.get(sState);
+			
+			if(sOutput==null)
 			{
-				return _SMILEY;
+				sOutput = FileUtil.loadContent(asciiPath+sState+".ascii");
+				if(sOutput!=null)
+				{
+					mapStateOutput.put(sState, sOutput);
+				}
 			}
-			else if(aProcessState.getCode() == ProcessState.TERMINATED.getCode())
+			
+			if(sOutput==null || sOutput.trim().length()==0)
 			{
-				return _SKULL;
+				sOutput = null;
 			}
+			
 		}
-		return null;
+		return sOutput;
 	}
 }
