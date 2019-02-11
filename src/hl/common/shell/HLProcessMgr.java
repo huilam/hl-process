@@ -25,6 +25,7 @@ public class HLProcessMgr
 	private boolean is_terminating_all 			= false;
 	private HLProcess terminatingProcess 		= null;
 	private Map<String, Long> mapInitSuccess 	= null;
+	private boolean isShowStateAsciiArt			= true;
 		
 	public HLProcessMgr(String aPropFileName)
 	{
@@ -81,8 +82,11 @@ public class HLProcessMgr
 								
 								if(mapInitSuccess.size()==getAllProcesses().length)
 								{
-									System.out.println();
-									System.out.println(StateOutput.getStateOutput(ProcessState.STARTED));
+									if(isShowStateAsciiArt)
+									{
+										System.out.println();
+										System.out.println(StateOutput.getStateOutput(ProcessState.STARTED));
+									}
 									System.out.println();
 									int i = 1;
 									SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
@@ -122,8 +126,11 @@ public class HLProcessMgr
 									is_terminating_all = true;
 									try {
 										terminatingProcess = p;
-										System.out.println();
-										System.out.println(StateOutput.getStateOutput(ProcessState.TERMINATED));
+										if(isShowStateAsciiArt)
+										{										
+											System.out.println();
+											System.out.println(StateOutput.getStateOutput(ProcessState.TERMINATED));
+										}
 										System.out.println();
 										System.out.println("[TERMINATE] "+p.getProcessId()+" initial termination ...");
 										terminateAllProcesses();
