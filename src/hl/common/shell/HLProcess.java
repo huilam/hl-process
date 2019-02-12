@@ -1,9 +1,7 @@
 package hl.common.shell;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.security.ProtectionDomain;
@@ -18,12 +16,13 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import hl.common.HLFileWriter;
 import hl.common.shell.listeners.HLProcessEvent;
 import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.68d";
+	private final static String _VERSION = "HLProcess alpha v0.69";
 	
 	public static enum ProcessState 
 	{ 
@@ -383,7 +382,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					
 					long lProcStartMs = System.currentTimeMillis();
 					BufferedReader rdr = null;
-					BufferedWriter wrt = null;
+					HLFileWriter wrt = null;
 					
 					SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
 					
@@ -396,16 +395,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							{
 								if(getProcessOutputFilename().trim().length()>0)
 								{
-									File fileOutput = new File(getProcessOutputFilename());
-									if(!fileOutput.exists())
-									{
-										if(fileOutput.getParentFile()!=null)
-										{
-											fileOutput.getParentFile().mkdirs();
-										}
-									}
-									
-									wrt = new BufferedWriter(new FileWriter(fileOutput, true));
+									wrt = new HLFileWriter(getProcessOutputFilename());
 								}
 							}
 							
