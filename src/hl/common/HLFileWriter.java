@@ -28,59 +28,136 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class HLFileWriter{
 	
 	private String filename	 	= null;
-	private boolean autoroll 	= true;
-	private BufferedWriter wrt 	= null;
-	private File file			= null;
-	private long repeat_count 	= 0;
-	private String last_line	= null;
 	
-	private long roll_threshold_bytes = 1000000;
+	private boolean auto_split 	= true;
+	
+	private boolean auto_roll 	= true;
+	private long auto_roll_maxcount 		= 5;
+	private long auto_roll_threshold_bytes 	= 1000000;
+	
+	private BufferedWriter writer 	= null;
+	private File file				= null;
+	
+	private long last_line_repeat_count		= 0;
+	private long repeat_silent_threshold	= 50;
+	private String last_line			= null;
+	
 	
 	public HLFileWriter(String aFileName)
 	{
 		this.filename = aFileName;
 	}
 	
+	public boolean isAuto_split() {
+		return auto_split;
+	}
+
+	public void setAuto_split(boolean auto_split) {
+		this.auto_split = auto_split;
+	}
+
+	public boolean isAuto_roll() {
+		return auto_roll;
+	}
+
+	public void setAuto_roll(boolean auto_roll) {
+		this.auto_roll = auto_roll;
+	}
+	
+	public long getAuto_roll_maxcount() {
+		return this.auto_roll_maxcount;
+	}
+
+	public void setAuto_roll_maxcount(long roll_maxcount) {
+		this.auto_roll_maxcount = roll_maxcount;
+	}
+
+	public long getAuto_roll_threshold_in_bytes() {
+		return this.auto_roll_threshold_bytes;
+	}
+
+	public void setAuto_roll_threshold_in_bytes(long roll_threshold_bytes) {
+		this.auto_roll_threshold_bytes = roll_threshold_bytes;
+	}
+
+
 	private BufferedWriter initWritter() throws IOException
 	{
 		file = new File(this.filename);
 		if(!file.exists())
 		{
-			if(file.getParentFile()!=null)
+			if(file.getAbsoluteFile().getParentFile()!=null)
 			{
-				file.getParentFile().mkdirs();
+				file.getAbsoluteFile().getParentFile().mkdirs();
 			}
 		}
+		
 		return new BufferedWriter(new FileWriter(file, true));
 	}
 	
 	public void write(String aLine) throws IOException
 	{
-		if(file!=null && this.autoroll)
+		if(file!=null && this.auto_split)
 		{
-			System.out.println("size="+file.length());;
-			if(file.length()>this.roll_threshold_bytes)
+			//System.out.println("size="+file.length());;
+			if(file.length()>this.auto_roll_threshold_bytes)
 			{
-				SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd.HHmmss.SSS");
+				File newFile = null;
 				closeWriter();
-				File newFile = new File(this.filename+"_"+df.format(new Date()));
+				
+				if(this.auto_roll)
+				{
+					Map<Long, File> mapFileList = new TreeMap<Long, File>();
+					
+					File folder = file.getAbsoluteFile().getParentFile();
+					
+					for(File f : folder.listFiles())
+					{
+						if(f.getName().startsWith(this.filename))
+						{
+							mapFileList.put(new Long(f.lastModified()), f);
+						}
+					}
+					
+					//autoroll deletion
+					long lPendingDel = mapFileList.size()-this.auto_roll_maxcount;
+					if(lPendingDel>0)
+					{
+						for(File f : mapFileList.values())
+						{
+							lPendingDel--;
+							//System.out.println("deleting "+f.getAbsolutePath());
+							f.delete();
+							
+							if(lPendingDel<=0)
+								break;
+						}
+					}
+					
+					mapFileList.clear();
+					mapFileList = null;
+				}
+				SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd.HHmmss.SSS");
+				newFile = new File(this.filename+"_"+df.format(new Date()));
 				file.renameTo(newFile);
 			}
 		}
 
-		if(wrt==null)
+		if(writer==null)
 		{
-			wrt = initWritter();
+			writer = initWritter();
 		}
 		
 		if(aLine.equals(this.last_line))
 		{
-			this.repeat_count++;
-			if(this.repeat_count%10==0)
+			this.last_line_repeat_count++;
+			if(this.last_line_repeat_count % this.repeat_silent_threshold==0)
 			{
 				return; //silent
 			}
@@ -88,59 +165,57 @@ public class HLFileWriter{
 		else
 		{
 			this.last_line = aLine;
-			this.repeat_count = 0;
+			this.last_line_repeat_count = 0;
 		}
 		
-		wrt.write(aLine);
-		if(this.repeat_count>0)
+		writer.write(aLine);
+		if(this.last_line_repeat_count>0)
 		{
-			wrt.write(" [repeated x"+this.repeat_count+"]");
+			writer.write(" [repeated x"+this.last_line_repeat_count+"]");
 		}
 	}
 	
 	public void flush() throws IOException
 	{
-		if(wrt!=null)
+		if(writer!=null)
 		{
-			wrt.flush();
+			writer.flush();
 		}
 	}
 	
 	public void newLine() throws IOException
 	{
-		if(wrt==null)
+		if(writer!=null)
 		{
-			wrt = initWritter();
+			writer.newLine();
 		}
-		
-		wrt.newLine();
 	}
 	
 	public void close()
 	{
 		closeWriter();
-		file = null;
-		repeat_count = 0;
-		last_line = null;
+		this.file = null;
+		this.last_line_repeat_count = 0;
+		this.last_line = null;
 	}
 	
 	public void closeWriter()
 	{
-		if(wrt!=null)
+		if(writer!=null)
 		{
 			try {
-				wrt.flush();
+				writer.flush();
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 			try {
-				wrt.close();
+				writer.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			wrt	 = null;
+			writer	 = null;
 		}
 	}
 }
