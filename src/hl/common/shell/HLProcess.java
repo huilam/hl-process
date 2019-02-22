@@ -22,7 +22,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.70";
+	private final static String _VERSION = "HLProcess alpha v0.71";
 	
 	public static enum ProcessState 
 	{ 
@@ -395,7 +395,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							{
 								if(getProcessOutputFilename().trim().length()>0)
 								{
-									wrt = new HLFileWriter(getProcessOutputFilename());
+									wrt = new HLFileWriter(
+											getProcessOutputFilename(),
+											getProcessLogAutoRollSizeBytes(),
+											getProcessLogAutoRollFileCount()
+											);
 								}
 							}
 							

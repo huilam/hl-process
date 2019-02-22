@@ -45,13 +45,27 @@ public class HLFileWriter{
 	private File file				= null;
 	
 	private long last_line_repeat_count		= 0;
-	private long repeat_silent_threshold	= 50;
+	private long repeat_silent_threshold	= 100;
 	private String last_line				= null;
 	
 	
 	public HLFileWriter(String aFileName)
 	{
 		this.filename = aFileName;
+	}
+	
+	public HLFileWriter(String aFileName, long aAutoRollBytes, int aAutoRollFileCount)
+	{
+		this.filename = aFileName;
+		if(aAutoRollBytes>-1)
+		{
+			this.auto_roll_threshold_bytes = aAutoRollBytes;
+		}
+		
+		if(aAutoRollFileCount>-1)
+		{
+			this.auto_roll_maxcount = aAutoRollFileCount;
+		}
 	}
 	
 	public boolean isAuto_split() {

@@ -12,7 +12,11 @@ import hl.common.shell.utils.TimeUtil;
 public class HLProcessCmd 
 {
 	private String id					= null;
+	
 	private String output_filename		= null;
+	private int output_autoroll_filecount	= -1;
+	private long output_autoroll_sizebytes	= -1;
+	
 	private boolean is_def_script_dir 	= false;
 	private boolean is_output_console	= false;
 	
@@ -199,6 +203,26 @@ public class HLProcessCmd
 	public String getProcessOutputFilename()
 	{
 		return this.output_filename;
+	}
+	
+	public void setProcessLogAutoRollFileCount(int aFileCount)
+	{
+		this.output_autoroll_filecount = aFileCount;
+	}
+	
+	public int getProcessLogAutoRollFileCount()
+	{
+		return this.output_autoroll_filecount;
+	}
+	
+	public void setProcessLogAutoRollSizeBytes(long aSizeInBytes)
+	{
+		this.output_autoroll_sizebytes = aSizeInBytes;
+	}
+	
+	public long getProcessLogAutoRollSizeBytes()
+	{
+		return this.output_autoroll_sizebytes;
 	}
 	
 	public void setDefaultToScriptDir(boolean isDefScriptDir)
