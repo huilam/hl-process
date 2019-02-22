@@ -38,15 +38,15 @@ public class HLFileWriter{
 	private boolean auto_split 	= true;
 	
 	private boolean auto_roll 	= true;
-	private long auto_roll_maxcount 		= 5;
-	private long auto_roll_threshold_bytes 	= 1000000;
+	private long auto_roll_maxcount 		= 4;
+	private long auto_roll_threshold_bytes 	= 10000000;
 	
 	private BufferedWriter writer 	= null;
 	private File file				= null;
 	
 	private long last_line_repeat_count		= 0;
 	private long repeat_silent_threshold	= 50;
-	private String last_line			= null;
+	private String last_line				= null;
 	
 	
 	public HLFileWriter(String aFileName)
