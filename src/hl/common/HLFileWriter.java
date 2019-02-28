@@ -38,7 +38,7 @@ public class HLFileWriter{
 	private boolean auto_split 	= true;
 	
 	private boolean auto_roll 	= true;
-	private long auto_roll_maxcount 		= 4;
+	private long auto_roll_maxcount 		= 5;
 	private long auto_roll_threshold_bytes 	= 10000000;
 	
 	private BufferedWriter writer 	= null;

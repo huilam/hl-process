@@ -32,8 +32,12 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_SHELL_CMD_BLOCK				= _PROP_KEY_SHELL+"command.block";
 	
 	public static String _PROP_KEY_SHELL_START_DELAY			= _PROP_KEY_SHELL+"start.delay.ms";
-	public static String _PROP_KEY_SHELL_OUTPUT_FILENAME		= _PROP_KEY_SHELL+"output.filename";
-	public static String _PROP_KEY_SHELL_OUTPUT_CONSOLE 		= _PROP_KEY_SHELL+"output.console";
+	
+	public static String _PROP_KEY_SHELL_OUTPUT_FILENAME			= _PROP_KEY_SHELL+"output.filename";
+	public static String _PROP_KEY_SHELL_OUTPUT_FILE_ROLL_COUNT		= _PROP_KEY_SHELL+"output.file.autoroll.count";
+	public static String _PROP_KEY_SHELL_OUTPUT_FILE_ROLL_BYTESIZE	= _PROP_KEY_SHELL+"output.file.autoroll.size.bytes";
+	public static String _PROP_KEY_SHELL_OUTPUT_CONSOLE 			= _PROP_KEY_SHELL+"output.console";
+	
 	public static String _PROP_KEY_SHELL_RUNAS_DAEMON 			= _PROP_KEY_SHELL+"runas.daemon";
 	public static String _PROP_KEY_SHELL_DEF2_SCRIPT_DIR 		= _PROP_KEY_SHELL+"default.to.script.dir";
 
@@ -58,10 +62,7 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_DEP_PROCESSES_REMOTE	= _PROP_KEY_DEP+"processes.remote";
 	public static String _PROP_KEY_DEP_CHK_INTERVAL_MS 	= _PROP_KEY_DEP+"check.interval.ms";
 	public static String _PROP_KEY_DEP_TIMEOUT_MS 		= _PROP_KEY_DEP+"timeout.ms";
-	
-	public static String _PROP_KEY_LOG_ROLL				= "log.autoroll.";
-	public static String _PROP_KEY_LOG_ROLL_FILECOUNT	= _PROP_KEY_LOG_ROLL+"file.count";
-	public static String _PROP_KEY_LOG_ROLL_BYTESIZE	= _PROP_KEY_LOG_ROLL+"size.bytes";
+
 	
 	public static String osname 	= null;
 	
@@ -272,18 +273,18 @@ public class HLProcessConfig {
 			}
 			
 			// LOG
-			sConfigVal = mapProcessConfig.get(_PROP_KEY_LOG_ROLL_BYTESIZE);
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_OUTPUT_FILE_ROLL_BYTESIZE);
 			if(sConfigVal!=null)
 			{
 				long lVal = Long.parseLong(sConfigVal);
 				p.setProcessLogAutoRollSizeBytes(lVal);
 			}
 			
-			sConfigVal = mapProcessConfig.get(_PROP_KEY_LOG_ROLL_FILECOUNT);
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_OUTPUT_FILE_ROLL_COUNT);
 			if(sConfigVal!=null)
 			{
 				int iVal = Integer.parseInt(sConfigVal);
-				p.setProcessLogAutoRollSizeBytes(iVal);
+				p.setProcessLogAutoRollFileCount(iVal);
 			}
 			
 			// SHELL
