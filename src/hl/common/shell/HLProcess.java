@@ -22,7 +22,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.72";
+	private final static String _VERSION = "HLProcess alpha v0.73";
 	
 	public static enum ProcessState 
 	{ 
@@ -384,8 +384,6 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					BufferedReader rdr = null;
 					HLFileWriter wrt = null;
 					
-					SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
-					
 					if(proc!=null)
 					{
 						try {
@@ -403,8 +401,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 								}
 							}
 							
-							String sLine = null;
-							String sDebugLine = null;				
+							String sLine = null;			
 							
 							Pattern pattCmdEnd = null;
 							String sCmdEndRegex = getCommandEndRegex();
@@ -425,13 +422,10 @@ public class HLProcess extends HLProcessCmd implements Runnable
 								if(sLine!=null)
 								{
 									lLastNonIdleTimestamp = System.currentTimeMillis();
-									sDebugLine = sPrefix + df.format(System.currentTimeMillis()) + sLine;
 			
 									if(wrt!=null)
 									{
-										wrt.write(sDebugLine);
-										wrt.newLine();
-										wrt.flush();
+										wrt.writeln(sLine);
 									}
 									
 									if(isOutputConsole())

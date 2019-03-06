@@ -47,6 +47,9 @@ public class HLFileWriter{
 	private long last_line_repeat_count		= 0;
 	private long repeat_silent_threshold	= 100;
 	private String last_line				= null;
+	private boolean isWithTimestamp			= true;
+	
+	private SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS ");
 	
 	
 	public HLFileWriter(String aFileName)
@@ -115,7 +118,16 @@ public class HLFileWriter{
 		return new BufferedWriter(new FileWriter(file, true));
 	}
 	
-	public void write(String aLine) throws IOException
+	public void writeln(String aLine) throws IOException
+	{
+		if(write(aLine))
+		{
+			writer.newLine();
+			writer.flush();
+		}
+	}
+	
+	public boolean write(String aLine) throws IOException
 	{
 		if(file!=null && this.auto_split)
 		{
@@ -171,30 +183,42 @@ public class HLFileWriter{
 		if(aLine.equals(this.last_line))
 		{
 			this.last_line_repeat_count++;
-			if(this.last_line_repeat_count % this.repeat_silent_threshold==0)
+			long iVal = (this.last_line_repeat_count+1) % this.repeat_silent_threshold;
+			if(iVal!=0)
 			{
-				return; //silent
+				return false; //silent
 			}
 		}
 		else
 		{
 			this.last_line = aLine;
-			this.last_line_repeat_count = 0;
 		}
+		checkRepeat();
 		
-		writer.write(aLine);
-		if(this.last_line_repeat_count>0)
+		if(isWithTimestamp)
 		{
-			writer.write(" [repeated x"+this.last_line_repeat_count+"]");
+			writer.write(df.format(System.currentTimeMillis())+" ");
+		}
+
+		writer.write(aLine);
+		
+		return true;
+	}
+	
+	private void checkRepeat() throws IOException
+	{
+		if(writer!=null && this.last_line_repeat_count>0)
+		{
+			writer.write(" [repeated x"+(this.last_line_repeat_count+1)+"]");
+			writer.newLine();
+			this.last_line_repeat_count = 0;
 		}
 	}
 	
 	public void flush() throws IOException
 	{
-		if(writer!=null)
-		{
-			writer.flush();
-		}
+		checkRepeat();
+		writer.flush();
 	}
 	
 	public void newLine() throws IOException
@@ -218,7 +242,7 @@ public class HLFileWriter{
 		if(writer!=null)
 		{
 			try {
-				writer.flush();
+				flush();
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
