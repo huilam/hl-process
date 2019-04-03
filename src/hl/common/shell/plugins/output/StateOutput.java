@@ -1,5 +1,7 @@
 package hl.common.shell.plugins.output;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,6 +14,28 @@ public class StateOutput
 	
 	private static String asciiPath = "/hl/common/shell/plugins/output/";
 
+	
+	public static void setAsciiArtFolder(File aFolder )
+	{
+		if(aFolder==null)
+			return;
+		
+		try {
+			asciiPath = aFolder.getCanonicalPath();
+			
+			boolean isEndWithSlash = asciiPath.endsWith("/") || asciiPath.endsWith("\\");
+			if(!isEndWithSlash)
+			{
+				asciiPath += File.separator;
+			}
+			
+			System.out.println("asciiart folder = "+asciiPath);
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	public static String getStateOutput(ProcessState aProcessState) {
 		
 		String sOutput = null;

@@ -1,5 +1,6 @@
 package hl.common.shell;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,6 +14,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import hl.common.shell.HLProcess;
+import hl.common.shell.plugins.output.StateOutput;
 import hl.common.shell.utils.PropUtil;
 
 public class HLProcessConfig {
@@ -22,6 +24,10 @@ public class HLProcessConfig {
 	public static String _PROP_PREFIX_PROCESS 		= "process.";
 	
 	public static String _PROP_KEY_DISABLED 		= "disabled";;
+
+	//-- SYSTEM
+	public static String _PROP_KEY_SYSTEM						= "system.";
+	public static String _PROP_KEY_SYSTEM_ASCIIART_FOLDER	 	= _PROP_KEY_SYSTEM+"asciiart.folder";
 
 	//-- SHELL
 	public static String _PROP_KEY_SHELL						= "shell.";
@@ -228,6 +234,18 @@ public class HLProcessConfig {
 				
 				mapProcessConfig.put(sConfigKey, sConfigVal);
 				mapPidConfigs.put(sPID, mapProcessConfig);
+			}
+			else
+			{
+				if(sKey.equalsIgnoreCase(_PROP_KEY_SYSTEM_ASCIIART_FOLDER))
+				{
+					String sAsciiArtFolder = aProperties.getProperty(sKey);
+					if(sAsciiArtFolder!=null && sAsciiArtFolder.trim().length()>0)
+					{
+						File folder = new File(sAsciiArtFolder.trim());
+						StateOutput.setAsciiArtFolder(folder);
+					}
+				}
 			}
 		}
 		
