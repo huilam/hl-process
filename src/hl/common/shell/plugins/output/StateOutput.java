@@ -16,7 +16,8 @@ public class StateOutput
 	private static Logger logger  	= Logger.getLogger(StateOutput.class.getName());
 	private static Map<String, String> mapStateOutput = new HashMap<String, String>();
 	
-	private static String asciiPath = "/hl/common/shell/plugins/output/";
+	private final static String default_asciiPath = "/hl/common/shell/plugins/output/";
+	private static String asciiPath = default_asciiPath;
 
 	
 	public static void setAsciiArtFolder(File aFolder )
@@ -53,6 +54,12 @@ public class StateOutput
 			if(sOutput==null)
 			{
 				sOutput = FileUtil.loadContent(asciiPath+sState+".ascii");
+				
+				if(sOutput==null || sOutput.trim().length()==0)
+				{
+					sOutput = FileUtil.loadContent(default_asciiPath+sState+".ascii");
+				}
+								
 				if(sOutput!=null)
 				{
 					mapStateOutput.put(sState, sOutput);
