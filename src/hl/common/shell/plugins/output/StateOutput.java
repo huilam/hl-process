@@ -4,12 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import hl.common.shell.HLProcessMgr;
 import hl.common.shell.HLProcess.ProcessState;
 import hl.common.shell.utils.FileUtil;
 
 public class StateOutput 
 {
+	private static Logger logger  	= Logger.getLogger(StateOutput.class.getName());
 	private static Map<String, String> mapStateOutput = new HashMap<String, String>();
 	
 	private static String asciiPath = "/hl/common/shell/plugins/output/";
@@ -29,7 +33,7 @@ public class StateOutput
 				asciiPath += File.separator;
 			}
 			
-			System.out.println("asciiart folder = "+asciiPath);
+			logger.log(Level.INFO, "Process state asciiPath="+asciiPath);
 			
 		} catch (IOException e) {
 			throw new RuntimeException(e);
