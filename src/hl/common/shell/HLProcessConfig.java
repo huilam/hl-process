@@ -19,6 +19,8 @@ import hl.common.shell.utils.PropUtil;
 
 public class HLProcessConfig {
 	
+	private static String _ENVVAR_JAR_PATH 			= "{jar:path}";
+	//
 	public static String _PROP_FILENAME 			= "process.properties";
 	//
 	public static String _PROP_PREFIX_PROCESS 		= "process.";
@@ -74,6 +76,7 @@ public class HLProcessConfig {
 	
 	public static char commandSpace = ' ';
 	
+	private Pattern pattEnvVar 	= Pattern.compile("\\{(.+)?//}");	
 	private Pattern pattProcessId 	= Pattern.compile(_PROP_PREFIX_PROCESS+"(.+?)\\.");	
 	private Map<String, HLProcess> mapProcesses = new HashMap<String, HLProcess>();
 	private Map<String, HLProcess> mapDisabledProcesses = new HashMap<String, HLProcess>();
@@ -212,6 +215,21 @@ public class HLProcessConfig {
 		while(iter.hasNext())
 		{
 			String sKey = (String) iter.next();
+			String sVal = aProperties.getProperty(sKey);
+			m = pattEnvVar.matcher(sVal);
+			int iGrp = 0;
+			while(m.find())
+			{
+				iGrp++;
+				String sEnvName = m.group(iGrp);
+				String sEnvVal 	= System.getenv(sEnvName);
+				if(sEnvVal!=null)
+				{
+					String sNewVal = sVal.replaceAll("\\{"+sEnvName+"\\}", sEnvVal);
+					aProperties.setProperty(sKey, sNewVal);
+					logger.log(Level.INFO, "[config] Update '"+sKey+"' with environment value to '"+sNewVal+"'");
+				}
+			}
 			
 			m = pattProcessId.matcher(sKey);
 			if(m.find())
