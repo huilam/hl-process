@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import hl.common.shell.HLProcessMgr;
 import hl.common.shell.HLProcess.ProcessState;
 import hl.common.shell.utils.FileUtil;
 

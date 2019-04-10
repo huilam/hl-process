@@ -15,11 +15,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import hl.common.shell.HLProcess;
 import hl.common.shell.plugins.output.StateOutput;
+import hl.common.shell.utils.FileUtil;
 import hl.common.shell.utils.PropUtil;
 
 public class HLProcessConfig {
 	
-	private static String _ENVVAR_JAR_PATH 			= "{jar:path}";
+	private static String _ENVVAR_JAR_PATH 			= "jar:path";
 	//
 	public static String _PROP_FILENAME 			= "process.properties";
 	//
@@ -28,26 +29,25 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_DISABLED 		= "disabled";;
 
 	//-- SYSTEM
-	public static String _PROP_KEY_SYSTEM						= "system.";
-	public static String _PROP_KEY_SYSTEM_ASCIIART_FOLDER	 	= _PROP_KEY_SYSTEM+"asciiart.folder";
+	public static String _PROP_KEY_SYSTEM							= "system.";
+	public static String _PROP_KEY_SYSTEM_ASCIIART_FOLDER	 		= _PROP_KEY_SYSTEM+"asciiart.folder";
 
 	//-- SHELL
-	public static String _PROP_KEY_SHELL						= "shell.";
-	public static String _PROP_KEY_SHELL_CMD_NO_OS	 			= _PROP_KEY_SHELL+"command";
-	public static String _PROP_KEY_SHELL_CMD	 				= _PROP_KEY_SHELL+"command.{os.name}";
-	public static String _PROP_KEY_SHELL_CMD_END_REGEX 			= _PROP_KEY_SHELL+"command.end.regex";
-	public static String _PROP_KEY_SHELL_CMD_IDLE_TIMEOUT_MS 	= _PROP_KEY_SHELL+"command.idle.timeout.ms";
-	public static String _PROP_KEY_SHELL_CMD_BLOCK				= _PROP_KEY_SHELL+"command.block";
-	
-	public static String _PROP_KEY_SHELL_START_DELAY			= _PROP_KEY_SHELL+"start.delay.ms";
+	public static String _PROP_KEY_SHELL							= "shell.";
+	public static String _PROP_KEY_SHELL_CMD_NO_OS	 				= _PROP_KEY_SHELL+"command";
+	public static String _PROP_KEY_SHELL_CMD	 					= _PROP_KEY_SHELL+"command.{os.name}";
+	public static String _PROP_KEY_SHELL_CMD_END_REGEX 				= _PROP_KEY_SHELL+"command.end.regex";
+	public static String _PROP_KEY_SHELL_CMD_IDLE_TIMEOUT_MS 		= _PROP_KEY_SHELL+"command.idle.timeout.ms";
+	public static String _PROP_KEY_SHELL_CMD_BLOCK					= _PROP_KEY_SHELL+"command.block";
+	public static String _PROP_KEY_SHELL_START_DELAY				= _PROP_KEY_SHELL+"start.delay.ms";
 	
 	public static String _PROP_KEY_SHELL_OUTPUT_FILENAME			= _PROP_KEY_SHELL+"output.filename";
 	public static String _PROP_KEY_SHELL_OUTPUT_FILE_ROLL_COUNT		= _PROP_KEY_SHELL+"output.file.autoroll.count";
 	public static String _PROP_KEY_SHELL_OUTPUT_FILE_ROLL_BYTESIZE	= _PROP_KEY_SHELL+"output.file.autoroll.size.bytes";
 	public static String _PROP_KEY_SHELL_OUTPUT_CONSOLE 			= _PROP_KEY_SHELL+"output.console";
 	
-	public static String _PROP_KEY_SHELL_RUNAS_DAEMON 			= _PROP_KEY_SHELL+"runas.daemon";
-	public static String _PROP_KEY_SHELL_DEF2_SCRIPT_DIR 		= _PROP_KEY_SHELL+"default.to.script.dir";
+	public static String _PROP_KEY_SHELL_RUNAS_DAEMON 				= _PROP_KEY_SHELL+"runas.daemon";
+	public static String _PROP_KEY_SHELL_DEF2_SCRIPT_DIR 			= _PROP_KEY_SHELL+"default.to.script.dir";
 
 	public static String _PROP_KEY_SHELL_TERMINATE_CMD_NO_OS		= _PROP_KEY_SHELL+"terminate.command";
 	public static String _PROP_KEY_SHELL_TERMINATE_CMD				= _PROP_KEY_SHELL+"terminate.command.{os.name}";
@@ -76,9 +76,9 @@ public class HLProcessConfig {
 	
 	public static char commandSpace = ' ';
 	
-	private Pattern pattEnvVar 	= Pattern.compile("\\{(.+)?//}");	
-	private Pattern pattProcessId 	= Pattern.compile(_PROP_PREFIX_PROCESS+"(.+?)\\.");	
-	private Map<String, HLProcess> mapProcesses = new HashMap<String, HLProcess>();
+	protected static Pattern pattEnvVar 				= Pattern.compile("\\{(.+?)\\}");
+	protected static Pattern pattProcessId 				= Pattern.compile(_PROP_PREFIX_PROCESS+"(.+?)\\.");	
+	private Map<String, HLProcess> mapProcesses 		= new HashMap<String, HLProcess>();
 	private Map<String, HLProcess> mapDisabledProcesses = new HashMap<String, HLProcess>();
 	
 	public static Logger logger = Logger.getLogger(HLProcessConfig.class.getName());
@@ -216,18 +216,34 @@ public class HLProcessConfig {
 		{
 			String sKey = (String) iter.next();
 			String sVal = aProperties.getProperty(sKey);
+			int iPattGrp = 0;
 			m = pattEnvVar.matcher(sVal);
-			int iGrp = 0;
 			while(m.find())
 			{
-				iGrp++;
-				String sEnvName = m.group(iGrp);
-				String sEnvVal 	= System.getenv(sEnvName);
+				iPattGrp++;
+				String sEnvName = m.group(iPattGrp);				
+				String sEnvVal	= null;
+				logger.log(Level.INFO, "[env-val] "+sEnvName+" detected : "+sKey+"="+sVal);
+				
+				if(sEnvName.equalsIgnoreCase(_ENVVAR_JAR_PATH))
+				{
+					File f = FileUtil.getJavaClassPath(HLProcess.class);
+					if(f!=null)
+					{
+						sEnvVal = f.getCanonicalPath();
+					}
+				}
+				//
+				if(sEnvVal == null)
+				{
+					sEnvVal = System.getenv(sEnvName);	
+				}
+				//
 				if(sEnvVal!=null)
 				{
 					String sNewVal = sVal.replaceAll("\\{"+sEnvName+"\\}", sEnvVal);
 					aProperties.setProperty(sKey, sNewVal);
-					logger.log(Level.INFO, "[config] Update '"+sKey+"' with environment value to '"+sNewVal+"'");
+					logger.log(Level.INFO, "[config] replaced '"+sEnvName+"' - "+sNewVal);
 				}
 			}
 			
@@ -623,5 +639,13 @@ public class HLProcessConfig {
 		return sb.toString();
 	}
 
-			
+	public static void main(String args[])
+	{
+		String sData 		= "{jar:path}/ascii-art";
+		Matcher m = HLProcessConfig.pattEnvVar.matcher(sData);
+		
+		System.out.println(m.find()+" - "+m.group(1));
+		
+		
+	}
 }
