@@ -266,6 +266,8 @@ public class HLProcessConfig {
 				//
 				if(sEnvVal!=null)
 				{
+					sEnvVal = sEnvVal.replaceAll("\\\\", "/");
+					
 					String sNewVal = sVal.replaceAll("\\{"+sEnvName+"\\}", sEnvVal);
 					aProperties.setProperty(sKey, sNewVal);
 					logger.log(Level.INFO, "[config] replaced '"+sEnvName+"' - "+sNewVal);
@@ -665,11 +667,5 @@ public class HLProcessConfig {
 
 	public static void main(String args[])
 	{
-		String sData 		= "{jar:path}/ascii-art";
-		Matcher m = HLProcessConfig.pattEnvVar.matcher(sData);
-		
-		System.out.println(m.find()+" - "+m.group(1));
-		
-		
 	}
 }
