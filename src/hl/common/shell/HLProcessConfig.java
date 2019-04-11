@@ -2,6 +2,9 @@ package hl.common.shell;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,7 +29,7 @@ public class HLProcessConfig {
 	//
 	public static String _PROP_PREFIX_PROCESS 		= "process.";
 	
-	public static String _PROP_KEY_DISABLED 		= "disabled";;
+	public static String _PROP_KEY_DISABLED 		= "disabled";
 
 	//-- SYSTEM
 	public static String _PROP_KEY_SYSTEM							= "system.";
@@ -227,7 +230,27 @@ public class HLProcessConfig {
 				
 				if(sEnvName.equalsIgnoreCase(_ENVVAR_JAR_PATH))
 				{
-					File f = FileUtil.getJavaClassPath(HLProcess.class);
+					File f = null;
+							
+					ProtectionDomain pd = HLProcessConfig.class.getProtectionDomain();
+					if(pd!=null)
+					{
+						CodeSource cs = pd.getCodeSource();
+						if(cs!=null)
+						{
+							f = new File(cs.getLocation().getFile());
+							if(f.getName().toLowerCase().endsWith(".jar"))
+							{
+								f = f.getParentFile();
+							}
+						}
+					}
+					
+					if(f==null)
+					{
+						f = FileUtil.getJavaClassPath(HLProcessConfig.class);	
+					}
+					
 					if(f!=null)
 					{
 						sEnvVal = f.getCanonicalPath();
@@ -238,6 +261,8 @@ public class HLProcessConfig {
 				{
 					sEnvVal = System.getenv(sEnvName);	
 				}
+				//
+				logger.log(Level.INFO, "[config] sEnvVal="+sEnvVal);
 				//
 				if(sEnvVal!=null)
 				{
@@ -540,7 +565,6 @@ public class HLProcessConfig {
 		validateProcessConfigs();
 	}
 	
-
 	private void validateProcessConfigs()
 	{
 		for(HLProcess p : getProcesses())
