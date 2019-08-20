@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -80,7 +81,7 @@ public class HLProcessConfig {
 	
 	protected static Pattern pattEnvVar 				= Pattern.compile("\\{(.+?)\\}");
 	protected static Pattern pattProcessId 				= Pattern.compile(_PROP_PREFIX_PROCESS+"(.+?)\\.");	
-	private Map<String, HLProcess> mapProcesses 		= new HashMap<String, HLProcess>();
+	private Map<String, HLProcess> mapProcesses 		= new LinkedHashMap<String, HLProcess>();
 	private Map<String, HLProcess> mapDisabledProcesses = new HashMap<String, HLProcess>();
 	
 	public static Logger logger = Logger.getLogger(HLProcessConfig.class.getName());
