@@ -2,7 +2,7 @@
                         OOOOOOOOOOOOOOOOOO
                      OOOOOO  OOOOOOOO  OOOOOO
                    OOOOOO      OOOO      OOOOOO
-                 OOOOOOOO      OOOO      OOOOOOOO
+                 OOOOOOOO  OO  OOOO  OO  OOOOOOOO
                 OOOOOOOOOO    OOOOOO    OOOOOOOOOO
                OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
                OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
@@ -15,9 +15,7 @@
                             OOOOOOOOOOO
 
    ######  ########  ######   #######  ######## ######## #######
-  ##    ##    ##    ##    ##  ##    ##    ##    ##       ##     #
-  ##          ##    ##    ##  ##    ##    ##    ##       ##      #
-   ######     ##    ########  #######     ##    ######   ##      #
-        ##    ##    ##    ##  ##   ##     ##    ##       ##      #
-  ##    ##    ##    ##    ##  ##    ##    ##    ##       ##     # 
+  ##          ##    ##    ##  ##    ##    ##    ##       ##     #
+    #####     ##    ########  #######     ##    ######   ##      #
+  #     ##    ##    ##    ##  ##    ##    ##    ##       ##     # 
    ######     ##    ##    ##  ##    ##    ##    ######## #######
