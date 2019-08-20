@@ -22,7 +22,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.75";
+	private final static String _VERSION = "HLProcess alpha v0.76";
 	
 	public static enum ProcessState 
 	{ 
@@ -730,7 +730,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		{
 			Long[] arrStartTimes = mapStates.values().toArray(new Long[mapStates.size()]);
 			ProcessState[] arrStates = mapStates.keySet().toArray(new ProcessState[mapStates.size()]);
-			SimpleDateFormat df = new SimpleDateFormat("dd-MMM HH:mm:ss");
+			SimpleDateFormat df = new SimpleDateFormat("dd-MMM HH:mm:ss.SSS");
 			for(int i=0; i<arrStates.length; i++)
 			{
 				ProcessState s = arrStates[i];
