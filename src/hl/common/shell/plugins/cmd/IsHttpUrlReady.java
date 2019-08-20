@@ -8,15 +8,20 @@ import hl.common.shell.utils.TimeUtil;
 
 public class IsHttpUrlReady {
 
-	public static boolean isUrlReady(String aURL, long lTimeoutSecs, long lCheckIntervalSecs)
+	public static boolean isUrlReady(String aURL, int iTimeoutSecs, int iCheckIntervalSecs)
 	{
 		boolean isOK = false;
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss.SSS");
 		HttpURLConnection conn 	= null;
 		
-		if(lCheckIntervalSecs>1000)
+		if(iCheckIntervalSecs>1000)
 		{
-			lCheckIntervalSecs -= 5;
+			iCheckIntervalSecs -= 10;
+		}
+		
+		if(iCheckIntervalSecs<=0)
+		{
+			iCheckIntervalSecs = 50;
 		}
 		
 		try {
@@ -26,6 +31,14 @@ public class IsHttpUrlReady {
 			{
 				URL url = new URL(aURL);
 				conn = (HttpURLConnection) url.openConnection();
+				
+				if(iTimeoutSecs<=0)
+				{
+					iTimeoutSecs = 5;
+				}
+
+				conn.setConnectTimeout(iTimeoutSecs*1000);
+				
 				try {
 					iRespCode = conn.getResponseCode();
 				}
@@ -44,14 +57,14 @@ public class IsHttpUrlReady {
 					System.out.println(sOutput);
 				}
 				
-				if(lTimeoutSecs>0)
+				if(iTimeoutSecs>0)
 				{
-					if(TimeUtil.isTimeout(lStartTimeMs, lTimeoutSecs*1000))
+					if(TimeUtil.isTimeout(lStartTimeMs, iTimeoutSecs*1000))
 					{
 						return false;
 					}
 				}
-				Thread.sleep(lCheckIntervalSecs);
+				Thread.sleep(iCheckIntervalSecs);
 			}
 			
 		}
