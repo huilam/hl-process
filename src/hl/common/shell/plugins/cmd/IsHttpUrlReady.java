@@ -1,12 +1,28 @@
 package hl.common.shell.plugins.cmd;
 
 import java.net.HttpURLConnection;
+import java.net.Socket;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
+import java.util.Base64;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedTrustManager;
 
 import hl.common.shell.utils.TimeUtil;
 
 public class IsHttpUrlReady {
+	
+	private static SSLContext anyHostSSLContext = null;
 
 	public static boolean isUrlReady(String aURL, int iTimeoutSecs, int iCheckIntervalSecs)
 	{
@@ -31,6 +47,34 @@ public class IsHttpUrlReady {
 			{
 				URL url = new URL(aURL);
 				conn = (HttpURLConnection) url.openConnection();
+
+				if(url.getProtocol().equalsIgnoreCase("https"))
+				{
+					HttpsURLConnection httpsconn = (HttpsURLConnection)conn;
+					
+					System.out.println("httpsconn="+httpsconn);
+					if(httpsconn!=null)
+					{
+						try {
+							SSLSocketFactory sc = getTrustAnyHostSSLSocketFactory();
+							
+							System.out.println("sc="+sc);
+							
+							httpsconn.setSSLSocketFactory(sc);
+						} catch (KeyManagementException e) {
+							e.printStackTrace();
+						} catch (NoSuchAlgorithmException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				
+				String sBasicAuth = url.getUserInfo();
+				if(conn!=null && sBasicAuth!=null)
+				{
+			   		String sEncodedBasicAuth = "Basic " + new String(Base64.getEncoder().encode(sBasicAuth.getBytes()));
+			   		conn.setRequestProperty ("Authorization", sEncodedBasicAuth);
+				}
 				
 				if(iTimeoutSecs<=0)
 				{
@@ -76,6 +120,53 @@ public class IsHttpUrlReady {
 		return isOK;
 	}
 	
+
+    private static SSLSocketFactory getTrustAnyHostSSLSocketFactory() throws NoSuchAlgorithmException, KeyManagementException
+    {
+    	SSLContext sc = anyHostSSLContext;
+
+    	if(sc==null)
+    	{
+	    	TrustManager trustmgr = new X509ExtendedTrustManager() 
+	    	{
+	
+				@Override
+				public X509Certificate[] getAcceptedIssuers() {
+					return null;
+				}
+	
+				@Override
+				public void checkClientTrusted(X509Certificate[] chain, String authType)
+						throws CertificateException {}
+	
+				@Override
+				public void checkServerTrusted(X509Certificate[] chain, String authType)
+						throws CertificateException {}
+				
+				@Override
+				public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
+						throws CertificateException {}
+	
+				@Override
+				public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+						throws CertificateException {}
+	
+				@Override
+				public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
+						throws CertificateException {}
+	
+				@Override
+				public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+						throws CertificateException {}
+			};
+			
+			sc = SSLContext.getInstance("SSL");
+			sc.init(null, new TrustManager[]{trustmgr}, new SecureRandom());
+			anyHostSSLContext = sc;
+    	}
+		return sc.getSocketFactory();
+    }
+    
 	public static void main(String args[])
 	{
 		boolean isSyntaxErr = true;
