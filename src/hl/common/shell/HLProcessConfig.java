@@ -44,7 +44,9 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_SHELL_CMD_BLOCK					= _PROP_KEY_SHELL+"command.block";
 	public static String _PROP_KEY_SHELL_START_DELAY				= _PROP_KEY_SHELL+"start.delay.ms";
 	
-	public static String _PROP_KEY_SHELL_OUTPUT_FILENAME			= _PROP_KEY_SHELL+"output.filename";
+	public static String _PROP_KEY_SHELL_OUTPUT_FILENAME_NO_OS		= _PROP_KEY_SHELL+"output.filename";
+	public static String _PROP_KEY_SHELL_OUTPUT_FILENAME			= _PROP_KEY_SHELL+"output.filename.{os.name}";
+	
 	public static String _PROP_KEY_SHELL_OUTPUT_FILE_ROLL_COUNT		= _PROP_KEY_SHELL+"output.file.autoroll.count";
 	public static String _PROP_KEY_SHELL_OUTPUT_FILE_ROLL_BYTESIZE	= _PROP_KEY_SHELL+"output.file.autoroll.size.bytes";
 	public static String _PROP_KEY_SHELL_OUTPUT_CONSOLE 			= _PROP_KEY_SHELL+"output.console";
@@ -99,6 +101,7 @@ public class HLProcessConfig {
 		osname = sOsName;
 		_PROP_KEY_SHELL_CMD = _PROP_KEY_SHELL_CMD.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
 		_PROP_KEY_SHELL_TERMINATE_CMD = _PROP_KEY_SHELL_TERMINATE_CMD.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
+		_PROP_KEY_SHELL_OUTPUT_FILENAME = _PROP_KEY_SHELL_OUTPUT_FILENAME.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
 	}
 	
 	//
@@ -416,10 +419,18 @@ public class HLProcessConfig {
 				p.setOutputConsole("true".equalsIgnoreCase(sConfigVal));
 			}
 			//
-			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_OUTPUT_FILENAME);
+			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_OUTPUT_FILENAME_NO_OS);
 			if(sConfigVal!=null)
 			{
 				p.setProcessOutputFilename(sConfigVal);
+			}
+			else
+			{
+				sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_OUTPUT_FILENAME);
+				if(sConfigVal!=null)
+				{
+					p.setProcessOutputFilename(sConfigVal);
+				}
 			}
 			//
 			sConfigVal = mapProcessConfig.get(_PROP_KEY_SHELL_START_DELAY);
@@ -637,7 +648,10 @@ public class HLProcessConfig {
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".linux=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".mac=").append(sNewLine);
 		sb.append("#").append(sNewLine);
-		sb.append("#").append(_PROP_KEY_SHELL_OUTPUT_FILENAME).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_OUTPUT_FILENAME_NO_OS).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_OUTPUT_FILENAME_NO_OS).append(".win=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_OUTPUT_FILENAME_NO_OS).append(".linux=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_OUTPUT_FILENAME_NO_OS).append(".mac=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_OUTPUT_CONSOLE).append("=false").append(sNewLine);
 		sb.append("#").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_TERMINATE_CMD_NO_OS).append("=").append(sNewLine);
