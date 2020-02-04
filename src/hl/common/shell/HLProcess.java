@@ -230,7 +230,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		{
 			setCurProcessState(ProcessState.START_WAIT_DEP);
 			logger.log(Level.INFO, 
-					sPrefix + "wait_dependances ... "+deps.size());
+					sPrefix + "wait_dependencies ... "+deps.size());
 
 
 			Collection<HLProcess> tmpDepends = new ArrayList<HLProcess>();
@@ -257,7 +257,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					}
 					else if(d.isTerminating())
 					{
-						String sErr = sPrefix+"Dependance process(es) failed to start ! "+sbDepCmd.toString();
+						String sErr = sPrefix+"Dependence process(es) failed to start ! "+sbDepCmd.toString();
 						logger.log(Level.SEVERE, sErr);
 						isWaitDepOk = false;
 						setCurProcessState(ProcessState.START_WAIT_DEP_FAILED);
@@ -278,7 +278,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					{
 						if(TimeUtil.isTimeout(lWaitDepStartMs, getDependTimeoutMs()))
 						{
-							String sErr = sPrefix+"Dependance process(es) init timeout ! "+getDependTimeoutMs()+"ms : "+sbDepCmd.toString();
+							String sErr = sPrefix+"Dependence process(es) init timeout ! "+getDependTimeoutMs()+"ms : "+sbDepCmd.toString();
 							logger.log(Level.SEVERE, sErr);
 							isWaitDepOk = false;
 							setCurProcessState(ProcessState.START_WAIT_DEP_TIMEOUT);

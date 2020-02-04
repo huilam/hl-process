@@ -69,8 +69,8 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_INIT_FAILED_REGEX	= _PROP_KEY_INIT+"failed.regex";
 	public static String _PROP_KEY_INIT_ERROR_MSG		= _PROP_KEY_INIT+"error.message";
 	
-	//-- DEPENDANCE
-	public static String _PROP_KEY_DEP					= "dependance.";
+	//-- Dependencies
+	public static String _PROP_KEY_DEP					= "dependence.";
 	public static String _PROP_KEY_DEP_PROCESSES_LOCAL	= _PROP_KEY_DEP+"processes.local";
 	public static String _PROP_KEY_DEP_PROCESSES_REMOTE	= _PROP_KEY_DEP+"processes.remote";
 	public static String _PROP_KEY_DEP_CHK_INTERVAL_MS 	= _PROP_KEY_DEP+"check.interval.ms";
