@@ -22,7 +22,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.76";
+	private final static String _VERSION = "HLProcess alpha v0.77";
 	
 	public static enum ProcessState 
 	{ 
@@ -372,36 +372,55 @@ public class HLProcess extends HLProcessCmd implements Runnable
 				
 				if(isNotStarted() && isDepOk)
 				{
+					HLFileWriter wrt = null;
+					String sLine = null;
+					
+					if(getProcessOutputFilename()!=null)
+					{
+						if(getProcessOutputFilename().trim().length()>0)
+						{
+							wrt = new HLFileWriter(
+									getProcessOutputFilename(),
+									getProcessLogAutoRollSizeBytes(),
+									getProcessLogAutoRollFileCount()
+									);
+						}
+					}
+					
 					ProcessBuilder pb = initProcessBuilder(this);
 					try {
 						proc = pb.start();
 					} catch (IOException e1) {
+						sLine = e1.getMessage();
+						if(wrt!=null)
+						{
+							try {
+								wrt.writeln(sLine);
+								wrt.flush();
+							} catch (IOException e) {
+								//do nothing
+							} finally {
+								wrt.close();
+							}
+						}
+						if(isOutputConsole())
+						{
+							System.out.println(sLine);
+						}
+						logger.log(Level.SEVERE, sLine);
 						onProcessError(this, e1);
+						return;
 					}
 					setCurProcessState(ProcessState.START_INIT);
 					
 					long lProcStartMs = System.currentTimeMillis();
 					BufferedReader rdr = null;
-					HLFileWriter wrt = null;
+
 					
 					if(proc!=null)
 					{
 						try {
-							rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-							
-							if(getProcessOutputFilename()!=null)
-							{
-								if(getProcessOutputFilename().trim().length()>0)
-								{
-									wrt = new HLFileWriter(
-											getProcessOutputFilename(),
-											getProcessLogAutoRollSizeBytes(),
-											getProcessLogAutoRollFileCount()
-											);
-								}
-							}
-							
-							String sLine = null;			
+							rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));			
 							
 							Pattern pattCmdEnd = null;
 							String sCmdEndRegex = getCommandEndRegex();
