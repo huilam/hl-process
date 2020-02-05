@@ -22,7 +22,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess alpha v0.77";
+	private final static String _VERSION = "HLProcess alpha v0.78";
 	
 	public static enum ProcessState 
 	{ 
@@ -245,8 +245,6 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			long lWaitDepStartMs = System.currentTimeMillis();
 			while(tmpDepends.size()>0 && ProcessState.START_WAIT_DEP.is(getCurProcessState()))
 			{
-				sbDepCmd.setLength(0);
-				
 				Iterator<HLProcess> iter = tmpDepends.iterator();
 				while(iter.hasNext())
 				{
@@ -259,7 +257,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					}
 					else if(d.isTerminating())
 					{
-						String sErr = sPrefix+"Dependence process(es) failed to start ! "+sbDepCmd.toString();
+						String sErr = sPrefix+"Dependence process(es) failed to start ! "+d.getProcessId();
 						logger.log(Level.SEVERE, sErr);
 						isWaitDepOk = false;
 						setCurProcessState(ProcessState.START_WAIT_DEP_FAILED);
@@ -268,19 +266,22 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					}
 					else
 					{
-						sbDepCmd.append("\n - ");
+						sbDepCmd.setLength(0);
+						sbDepCmd.append("[wait_dependencies] ");
 						sbDepCmd.append(d.getProcessId()).append(" : ");
 						if(d.isRemoteRef())
 							sbDepCmd.append("(remote)").append(d.getRemoteHost()==null?"":d.getRemoteHost());
 						else
 							sbDepCmd.append(d.getProcessCommand());
+						
+						logger.log(Level.INFO, sbDepCmd.toString());
 					}
 					
 					if(isDependTimeOut)
 					{
 						if(TimeUtil.isTimeout(lWaitDepStartMs, getDependTimeoutMs()))
 						{
-							String sErr = sPrefix+"Dependence process(es) init timeout ! "+getDependTimeoutMs()+"ms : "+sbDepCmd.toString();
+							String sErr = sPrefix+"Dependence process(es) init timeout ! "+getDependTimeoutMs()+"ms : "+d.getProcessId();
 							logger.log(Level.SEVERE, sErr);
 							isWaitDepOk = false;
 							setCurProcessState(ProcessState.START_WAIT_DEP_TIMEOUT);
