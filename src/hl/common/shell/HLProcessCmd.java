@@ -202,6 +202,8 @@ public class HLProcessCmd
 	
 	public String getProcessOutputFilename()
 	{
+		if(this.output_filename==null)
+			return "";
 		return this.output_filename;
 	}
 	

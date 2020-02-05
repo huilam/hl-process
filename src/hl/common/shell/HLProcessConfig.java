@@ -582,26 +582,95 @@ public class HLProcessConfig {
 	{
 		for(HLProcess p : getProcesses())
 		{	
-			if(p.isRemoteRef())
-			{
-				if(p.getProcessCommand().trim().length()>0
-					 
-					 || p.getDependCheckIntervalMs()>0
-					 || p.getDependTimeoutMs()>0
-					 
-					 || p.getProcessStartDelayMs()>0
-					)
+			if(!p.isDisabled())
+			{	
+				//Remote process
+				if(p.isRemoteRef())
 				{
-					throw new RuntimeException("["+p.getProcessId()+"] Remote Process should not have local configuration !");
+					if(p.getProcessCommand().trim().length()>0
+						 
+						 || p.getDependCheckIntervalMs()>0
+						 || p.getDependTimeoutMs()>0
+						 
+						 || p.getProcessStartDelayMs()>0
+						)
+					{
+						throw new RuntimeException("["+p.getProcessId()+"] Remote Process should not have local configuration !");
+					}
 				}
-			}
-			else if(p.getProcessCommand().trim().length()==0)
-			{
-				if(!p.isDisabled())
+				//Dependencies 
+				else if(p.getDependProcesses().size()>0)
+				{
+					Iterator<HLProcess> iter = p.getDependProcesses().iterator();
+					while(iter.hasNext())
+					{
+						HLProcess dep = iter.next();
+						if(dep.isDisabled())
+						{
+							throw new RuntimeException("["+p.getProcessId()+"] Dependence Process is disabled !" + dep.getProcessId());
+						}
+					}
+				}
+				//Process command
+				else if(p.getProcessCommand().trim().length()==0)
 				{
 					throw new RuntimeException("["+p.getProcessId()+"] Process command cannot be empty ! - "+_PROP_KEY_SHELL_CMD);
 				}
+				else if(p.getProcessCommand().trim().length()>0)
+				{
+
+					File fileScript = new File(p.getCommands()[0]);
+					
+					if(fileScript.exists())
+					{
+						if(!fileScript.canExecute())
+						{
+							//file permission problem
+							throw new RuntimeException("["+p.getProcessId()+"] Insufficient execution permission - "+_PROP_KEY_SHELL_CMD+":"+p.getProcessCommand());
+						}
+					}
+				}
+				//Process Terminate comman
+				else if(p.getTerminateCommand().trim().length()>0)
+				{
+					File fileScript = new File(p.getTerminateCommand());
+					
+					if(fileScript.exists())
+					{
+						if(!fileScript.canExecute())
+						{
+							//file permission problem
+							throw new RuntimeException("["+p.getProcessId()+"] Insufficient execution permission - "+_PROP_KEY_SHELL_TERMINATE_CMD+":"+p.getTerminateCommand());
+						}
+					}
+				}
+				//Process output/log file
+				else if(p.getProcessOutputFilename().trim().length()>0)
+				{
+					File fileOutput = new File(p.getProcessOutputFilename());
+					
+					if(!fileOutput.exists())
+					{
+						boolean isCreated = false;
+						try {
+							isCreated = fileOutput.mkdirs();
+						}
+						catch(Exception ex)
+						{
+							isCreated = false;
+						}
+						
+						if(!isCreated)
+						{
+							//failed to create logfile
+							throw new RuntimeException("["+p.getProcessId()+"] Invalid process output filename - "+_PROP_KEY_SHELL_OUTPUT_FILENAME+":"+p.getProcessOutputFilename());
+						}
+					}
+				}
 			}
+			
+			//
+			
 		}
 	}
 	

@@ -122,6 +122,8 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	
 	public String getTerminateCommand()
 	{
+		if(terminate_command==null)
+			return "";
 		return terminate_command;
 	}
 	
@@ -391,6 +393,13 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					try {
 						proc = pb.start();
 					} catch (IOException e1) {
+						
+						if(proc!=null)
+						{
+							proc.destroy();
+						}
+						proc = null;
+						
 						sLine = e1.getMessage();
 						if(wrt!=null)
 						{
@@ -409,7 +418,6 @@ public class HLProcess extends HLProcessCmd implements Runnable
 						}
 						logger.log(Level.SEVERE, sLine);
 						onProcessError(this, e1);
-						return;
 					}
 					setCurProcessState(ProcessState.START_INIT);
 					
