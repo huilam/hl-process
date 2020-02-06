@@ -8,6 +8,7 @@ import java.security.ProtectionDomain;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -238,6 +239,9 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			Collection<HLProcess> tmpDepends = new ArrayList<HLProcess>();
 			tmpDepends.addAll(deps);
 			
+			Map<String, Long> tmpWaitStart = new HashMap<String, Long>();
+			Map<String, Long> tmpWaitLastCheck = new HashMap<String, Long>();
+
 			boolean isDependTimeOut = (getDependTimeoutMs()>0);
 			StringBuffer sbDepCmd = new StringBuffer();
 			
@@ -266,15 +270,39 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					}
 					else
 					{
+						Long lWaitStarttime = tmpWaitStart.get(d.getProcessId());
 						sbDepCmd.setLength(0);
-						sbDepCmd.append("[wait_dependencies] ");
-						sbDepCmd.append(d.getProcessId()).append(" : ");
-						if(d.isRemoteRef())
-							sbDepCmd.append("(remote)").append(d.getRemoteHost()==null?"":d.getRemoteHost());
-						else
-							sbDepCmd.append(d.getProcessCommand());
 						
-						logger.log(Level.INFO, sbDepCmd.toString());
+						if(lWaitStarttime==null)
+						{
+							tmpWaitStart.put(d.getProcessId(), System.currentTimeMillis());
+							tmpWaitLastCheck.put(d.getProcessId(), System.currentTimeMillis());
+							
+							sbDepCmd.append("[wait_dependencies] ").append(getProcessId()).append(":").append(d.getProcessId());
+							sbDepCmd.append(" - ");
+							if(d.isRemoteRef())
+								sbDepCmd.append("(remote)").append(d.getRemoteHost()==null?"":d.getRemoteHost());
+							else
+								sbDepCmd.append(d.getProcessCommand());
+							logger.log(Level.INFO, sbDepCmd.toString());
+						}
+						else
+						{
+							Long LLastCheckTime = tmpWaitLastCheck.get(d.getProcessId());
+							if(LLastCheckTime==null)
+								LLastCheckTime = 0L;
+							
+							long lLastCheck = System.currentTimeMillis() - LLastCheckTime;
+							if(lLastCheck >= 1000)
+							{
+								tmpWaitLastCheck.put(d.getProcessId(), System.currentTimeMillis());
+								
+								long lElapsed = System.currentTimeMillis() - lWaitStarttime;
+								sbDepCmd.append("[wait_dep_elapsed] ").append(getProcessId()).append(":").append(d.getProcessId());
+								sbDepCmd.append(" - ").append(lElapsed).append(" ms");
+								logger.log(Level.INFO, sbDepCmd.toString());
+							}
+						}
 					}
 					
 					if(isDependTimeOut)
