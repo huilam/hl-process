@@ -674,6 +674,7 @@ public class HLProcessConfig {
 							//failed to create logfile
 							throw new RuntimeException("["+p.getProcessId()+"] Invalid process output filename - "+_PROP_KEY_SHELL_OUTPUT_FILENAME+":"+p.getProcessOutputFilename());
 						}
+					}
 				}
 			}
 			
