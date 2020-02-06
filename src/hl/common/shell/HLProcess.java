@@ -256,7 +256,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					
 					if(d.isInitSuccess())
 					{
-						iter.remove();
+						deps.remove(d);
 						continue;
 					}
 					else if(d.isTerminating())
@@ -271,13 +271,13 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					else
 					{
 						Long lWaitStarttime = tmpWaitStart.get(d.getProcessId());
-						sbDepCmd.setLength(0);
 						
 						if(lWaitStarttime==null)
 						{
 							tmpWaitStart.put(d.getProcessId(), System.currentTimeMillis());
 							tmpWaitLastCheck.put(d.getProcessId(), System.currentTimeMillis());
 							
+							sbDepCmd.setLength(0);
 							sbDepCmd.append("[wait_dependencies] ").append(getProcessId()).append(":").append(d.getProcessId());
 							sbDepCmd.append(" - ");
 							if(d.isRemoteRef())
@@ -298,6 +298,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 								tmpWaitLastCheck.put(d.getProcessId(), System.currentTimeMillis());
 								
 								long lElapsed = System.currentTimeMillis() - lWaitStarttime;
+								sbDepCmd.setLength(0);
 								sbDepCmd.append("[wait_dep_elapsed] ").append(getProcessId()).append(":").append(d.getProcessId());
 								sbDepCmd.append(" - ").append(lElapsed).append(" ms");
 								logger.log(Level.INFO, sbDepCmd.toString());
@@ -325,6 +326,9 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					logger.log(Level.WARNING, e.getMessage(), e);
 					onProcessError(this, e);
 				}
+				
+				tmpDepends.clear();
+				tmpDepends.addAll(deps);
 			}
 		}
 		
