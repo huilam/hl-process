@@ -649,8 +649,17 @@ public class HLProcessConfig {
 				{
 					File fileOutput = new File(p.getProcessOutputFilename());
 					
-					if(!fileOutput.exists())
+					if(fileOutput.exists())
 					{
+						if(!fileOutput.canWrite())
+						{
+							//file permission problem
+							throw new RuntimeException("["+p.getProcessId()+"] Insufficient write permission - "+_PROP_KEY_SHELL_TERMINATE_CMD+":"+p.getTerminateCommand());
+						}
+					}
+					else 
+					{
+						//File not exist
 						boolean isCreated = false;
 						try {
 							isCreated = fileOutput.mkdirs();
@@ -665,7 +674,6 @@ public class HLProcessConfig {
 							//failed to create logfile
 							throw new RuntimeException("["+p.getProcessId()+"] Invalid process output filename - "+_PROP_KEY_SHELL_OUTPUT_FILENAME+":"+p.getProcessOutputFilename());
 						}
-					}
 				}
 			}
 			
