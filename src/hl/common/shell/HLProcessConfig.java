@@ -222,6 +222,13 @@ public class HLProcessConfig {
 		{
 			String sKey = (String) iter.next();
 			String sVal = aProperties.getProperty(sKey);
+			
+			if(sKey.contains(".dependance."))
+			{
+				throw new RuntimeException("Please change 'depend(a)nce' to 'depend(e)nce' - "+sKey);
+			}
+			
+			
 			int iPattGrp = 0;
 			m = pattEnvVar.matcher(sVal);
 			while(m.find())
