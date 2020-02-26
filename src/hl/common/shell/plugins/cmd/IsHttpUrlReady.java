@@ -1,6 +1,8 @@
 package hl.common.shell.plugins.cmd;
 
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.security.KeyManagementException;
@@ -10,6 +12,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -23,7 +27,8 @@ import hl.common.shell.utils.TimeUtil;
 public class IsHttpUrlReady {
 	
 	private static SSLContext anyHostSSLContext = null;
-
+	private static Pattern pattNotIP = Pattern.compile("[a-zA-Z]+\\.");
+	
 	public static boolean isUrlReady(String aURL, int iTimeoutSecs, int iCheckIntervalSecs)
 	{
 		boolean isOK = false;
@@ -43,10 +48,31 @@ public class IsHttpUrlReady {
 		try {
 			long lStartTimeMs = System.currentTimeMillis();
 			int iRespCode  = 404;
+			String sIP = null;
+			
 			while(!isOK)
 			{
 				URL url = new URL(aURL);
 				conn = (HttpURLConnection) url.openConnection();
+				
+				Matcher m = pattNotIP.matcher(url.getHost());
+				if(m.find())
+				{
+					try {
+						//Hostname
+						InetSocketAddress sock = new InetSocketAddress(url.getHost(), 0);
+						InetAddress addr = sock.getAddress();
+						if(addr!=null)
+						{
+							sIP = addr.getHostAddress();
+						}
+					}catch(Exception ex)
+					{
+						//ignore
+					}
+					
+				}
+				
 
 				if(url.getProtocol().equalsIgnoreCase("https"))
 				{
@@ -91,7 +117,7 @@ public class IsHttpUrlReady {
 				}
 				isOK = iRespCode>=200 && iRespCode<300;
 				
-				String sOutput = df.format(System.currentTimeMillis())+"  "+aURL+" : "+iRespCode;
+				String sOutput = df.format(System.currentTimeMillis())+"  "+aURL+(sIP!=null ? " (ip:"+sIP+")" : "")+" : "+iRespCode;
 				if(isOK)
 				{
 					System.out.println("[IsHttpUrlReady-OK] "+sOutput);
