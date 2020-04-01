@@ -89,6 +89,8 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	private HLProcessEvent listener				= null;	
 	private HLProcess processRequestor			= null;
 	
+	private long dep_wait_log_interval_ms		= 5000;
+	
 	public static Logger logger = Logger.getLogger(HLProcess.class.getName());
 
 	
@@ -267,7 +269,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					if(d.isInitSuccess())
 					{
 						sbDepCmd.setLength(0);
-						sbDepCmd.append("[dep_init_success] ").append(getProcessId()).append(":").append(d.getProcessId());
+						sbDepCmd.append("[dep_init_success] ").append(getProcessId()).append(" [ready.dep]=").append(d.getProcessId());
 						logger.log(Level.INFO, sbDepCmd.toString());
 						deps.remove(d);
 						continue;
@@ -276,7 +278,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					{
 
 						sbDepCmd.setLength(0);
-						sbDepCmd.append("[dep_init_failed] ").append(getProcessId()).append(":").append(d.getProcessId());
+						sbDepCmd.append("[dep_init_failed] ").append(getProcessId()).append(" [failed.dep]=").append(d.getProcessId());
 						logger.log(Level.SEVERE, sbDepCmd.toString());
 						isWaitDepOk = false;
 						setCurProcessState(ProcessState.START_WAIT_DEP_FAILED);
@@ -293,7 +295,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							tmpWaitLastCheck.put(d.getProcessId(), System.currentTimeMillis());
 							
 							sbDepCmd.setLength(0);
-							sbDepCmd.append("[wait_dependencies] ").append(getProcessId()).append(":").append(d.getProcessId());
+							sbDepCmd.append("[wait_dependencies] ").append(getProcessId()).append(" [waiting.for]=").append(d.getProcessId());
 							sbDepCmd.append(" - ");
 							if(d.isRemoteRef())
 								sbDepCmd.append("(remote)").append(d.getRemoteHost()==null?"":d.getRemoteHost());
@@ -308,14 +310,13 @@ public class HLProcess extends HLProcessCmd implements Runnable
 								LLastCheckTime = 0L;
 							
 							long lLastCheck = System.currentTimeMillis() - LLastCheckTime;
-							if(lLastCheck >= 1000)
+							if(lLastCheck >= this.dep_wait_log_interval_ms)
 							{
 								tmpWaitLastCheck.put(d.getProcessId(), System.currentTimeMillis());
 								
 								long lElapsed = System.currentTimeMillis() - lWaitStarttime;
 								sbDepCmd.setLength(0);
-								sbDepCmd.append("[wait_dep_elapsed] ").append(getProcessId()).append(":").append(d.getProcessId());
-								sbDepCmd.append(" - ").append(lElapsed).append(" ms");
+								sbDepCmd.append("    [wait_dep_elapsed] ").append(getProcessId()).append(" [still.waiting]=").append(d.getProcessId()).append(" - ").append(lElapsed).append(" ms");
 								logger.log(Level.INFO, sbDepCmd.toString());
 							}
 						}
@@ -325,7 +326,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					{
 						if(TimeUtil.isTimeout(lWaitDepStartMs, getDependTimeoutMs()))
 						{
-							String sErr = sPrefix+"[dep_init_timeout] "+getProcessId()+":"+d.getProcessId()+" - "+getDependTimeoutMs()+"ms ";
+							String sErr = sPrefix+"[dep_init_timeout] "+getProcessId()+" [timeout.dep]="+d.getProcessId()+" - "+getDependTimeoutMs()+"ms ";
 							logger.log(Level.SEVERE, sErr);
 							isWaitDepOk = false;
 							setCurProcessState(ProcessState.START_WAIT_DEP_TIMEOUT);
