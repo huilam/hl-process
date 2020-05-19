@@ -228,7 +228,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	private boolean checkDependenciesB4Start()
 	{
 		boolean isWaitDepOk = true;
-		String sPrefix = (getProcessId()==null?"":"["+getProcessId()+"] ");
+		String sPrefix = (getProcessCodeName()==null?"":"["+getProcessCodeName()+"] ");
 		
 		Collection<HLProcess> deps = getDependProcesses();
 		if(deps!=null && deps.size()>0 && isNotStarted())
@@ -242,7 +242,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 				HLProcess dep = iterDep.next();
 				if(sbDepList.length()>0)
 					sbDepList.append(", ");
-				sbDepList.append(dep.getProcessId());
+				sbDepList.append(dep.getProcessCodeName());
 			}
 			logger.log(Level.INFO, 
 					sPrefix + "wait_dependencies ("+deps.size()+") - "+sbDepList.toString());
@@ -269,7 +269,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					if(d.isInitSuccess())
 					{
 						sbDepCmd.setLength(0);
-						sbDepCmd.append("[dep_init_success] ").append(getProcessId()).append(" [ready.dep]=").append(d.getProcessId());
+						sbDepCmd.append("[dep_init_success] ").append(getProcessCodeName()).append(" [ready.dep]=").append(d.getProcessCodeName());
 						logger.log(Level.INFO, sbDepCmd.toString());
 						deps.remove(d);
 						continue;
@@ -278,7 +278,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					{
 
 						sbDepCmd.setLength(0);
-						sbDepCmd.append("[dep_init_failed] ").append(getProcessId()).append(" [failed.dep]=").append(d.getProcessId());
+						sbDepCmd.append("[dep_init_failed] ").append(getProcessCodeName()).append(" [failed.dep]=").append(d.getProcessCodeName());
 						logger.log(Level.SEVERE, sbDepCmd.toString());
 						isWaitDepOk = false;
 						setCurProcessState(ProcessState.START_WAIT_DEP_FAILED);
@@ -287,15 +287,15 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					}
 					else
 					{
-						Long lWaitStarttime = tmpWaitStart.get(d.getProcessId());
+						Long lWaitStarttime = tmpWaitStart.get(d.getProcessCodeName());
 						
 						if(lWaitStarttime==null)
 						{
-							tmpWaitStart.put(d.getProcessId(), System.currentTimeMillis());
-							tmpWaitLastCheck.put(d.getProcessId(), System.currentTimeMillis());
+							tmpWaitStart.put(d.getProcessCodeName(), System.currentTimeMillis());
+							tmpWaitLastCheck.put(d.getProcessCodeName(), System.currentTimeMillis());
 							
 							sbDepCmd.setLength(0);
-							sbDepCmd.append("[wait_dependencies] ").append(getProcessId()).append(" [waiting.for]=").append(d.getProcessId());
+							sbDepCmd.append("[wait_dependencies] ").append(getProcessCodeName()).append(" [waiting.for]=").append(d.getProcessCodeName());
 							sbDepCmd.append(" - ");
 							if(d.isRemoteRef())
 								sbDepCmd.append("(remote)").append(d.getRemoteHost()==null?"":d.getRemoteHost());
@@ -305,18 +305,18 @@ public class HLProcess extends HLProcessCmd implements Runnable
 						}
 						else
 						{
-							Long LLastCheckTime = tmpWaitLastCheck.get(d.getProcessId());
+							Long LLastCheckTime = tmpWaitLastCheck.get(d.getProcessCodeName());
 							if(LLastCheckTime==null)
 								LLastCheckTime = 0L;
 							
 							long lLastCheck = System.currentTimeMillis() - LLastCheckTime;
 							if(lLastCheck >= this.dep_wait_log_interval_ms)
 							{
-								tmpWaitLastCheck.put(d.getProcessId(), System.currentTimeMillis());
+								tmpWaitLastCheck.put(d.getProcessCodeName(), System.currentTimeMillis());
 								
 								long lElapsed = System.currentTimeMillis() - lWaitStarttime;
 								sbDepCmd.setLength(0);
-								sbDepCmd.append("    [wait_dep_elapsed] ").append(getProcessId()).append(" [still.waiting]=").append(d.getProcessId()).append(" - ").append(lElapsed).append(" ms");
+								sbDepCmd.append("    [wait_dep_elapsed] ").append(getProcessCodeName()).append(" [still.waiting]=").append(d.getProcessCodeName()).append(" - ").append(lElapsed).append(" ms");
 								logger.log(Level.INFO, sbDepCmd.toString());
 							}
 						}
@@ -326,7 +326,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					{
 						if(TimeUtil.isTimeout(lWaitDepStartMs, getDependTimeoutMs()))
 						{
-							String sErr = sPrefix+"[dep_init_timeout] "+getProcessId()+" [timeout.dep]="+d.getProcessId()+" - "+getDependTimeoutMs()+"ms ";
+							String sErr = sPrefix+"[dep_init_timeout] "+getProcessCodeName()+" [timeout.dep]="+d.getProcessCodeName()+" - "+getDependTimeoutMs()+"ms ";
 							logger.log(Level.SEVERE, sErr);
 							isWaitDepOk = false;
 							setCurProcessState(ProcessState.START_WAIT_DEP_TIMEOUT);
@@ -356,7 +356,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		ProcessBuilder pb = null;
 		
 		String[] sCommands = aHLProcess.getCommands();
-		String sPrefix = "["+aHLProcess.getProcessId()+"]";
+		String sPrefix = "["+aHLProcess.getProcessCodeName()+"]";
 				
 		if(sCommands!=null)
 		{
@@ -403,12 +403,12 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	}
 	
 	public void run() {		
-		String sPrefix = (getProcessId()==null?"":"["+getProcessId()+"] ");
+		String sPrefix = (getProcessCodeName()==null?"":"["+getProcessCodeName()+"] ");
 		try {
 			if(isNotStarting())
 			{
 				onProcessStarting(this);
-				logger.log(Level.INFO, sPrefix+"start - "+getProcessId());
+				logger.log(Level.INFO, sPrefix+"start - "+getProcessCodeName());
 				boolean isDepOk = checkDependenciesB4Start();
 				
 				if(isDepOk)
@@ -673,7 +673,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			{
 				this.is_exec_terminate_cmd = true;
 				isExecuted = true;
-				String sPrefix = (getProcessId()==null?"":getProcessId());
+				String sPrefix = (getProcessCodeName()==null?"":getProcessCodeName());
 				String sEndCmd = getTerminateCommand();
 				if(sEndCmd!=null && sEndCmd.trim().length()>0)
 				{
@@ -684,7 +684,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);
 					
 					setCurProcessState(ProcessState.STOP_EXEC_CMD);
-					HLProcess procTerminate = new HLProcess(getProcessId()+".terminate", sSplitEndCmd);
+					HLProcess procTerminate = new HLProcess(getProcessCodeName()+".terminate", sSplitEndCmd);
 					procTerminate.setCommandEndRegex(getTerminateEndRegex());
 					procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
 					
@@ -722,7 +722,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		if(sInitErrMsg!=null && sInitErrMsg.trim().length()>0)
 		{
 			StringBuffer sbLine = new StringBuffer();
-			int iLen = aHLProcess.getProcessId().length()+sInitErrMsg.length()+14;
+			int iLen = aHLProcess.getProcessCodeName().length()+sInitErrMsg.length()+14;
 			for(int i=0; i<iLen; i++)
 			{
 				sbLine.append("#");
@@ -730,7 +730,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 
 			StringBuffer sbMsg = new StringBuffer();
 			sbMsg.append(sbLine.toString()).append("\n");
-			sbMsg.append("# [").append(aHLProcess.getProcessId()).append("] error: ").append(sInitErrMsg).append("\n");
+			sbMsg.append("# [").append(aHLProcess.getProcessCodeName()).append("] error: ").append(sInitErrMsg).append("\n");
 			sbMsg.append(sbLine.toString()).append("\n");
 			
 			logger.log(Level.SEVERE, "\n"+sbMsg.toString());
@@ -834,7 +834,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 				
 				if(s.is(ProcessState.STOP_REQUEST))
 				{
-					sbState.append("[req:").append(processRequestor.getProcessId()).append("]");
+					sbState.append("[req:").append(processRequestor.getProcessCodeName()).append("]");
 				}
 				
 				if(lElapseMs!=null && lElapseMs>0)

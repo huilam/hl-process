@@ -78,7 +78,7 @@ public class HLProcessMgr
 									mapInitSuccess = new LinkedHashMap<String, Long>();
 								}
 								**/
-								mapInitSuccess.put(p.getProcessId(), new Long(System.currentTimeMillis()));
+								mapInitSuccess.put(p.getProcessCodeName(), new Long(System.currentTimeMillis()));
 								
 								if(mapInitSuccess.size()==getAllProcesses().length)
 								{
@@ -132,7 +132,7 @@ public class HLProcessMgr
 											consolePrintln(StateOutput.getStateOutput(ProcessState.TERMINATED));
 										}
 										consolePrintln();
-										consolePrintln("[TERMINATE] "+p.getProcessId()+" initial termination ...");
+										consolePrintln("[TERMINATE] "+p.getProcessCodeName()+" initial termination ...");
 										terminateAllProcesses();
 										waitForAllProcessesToBeTerminated(terminatingProcess);
 									}finally
@@ -185,7 +185,7 @@ public class HLProcessMgr
 			{
 				if(aCurrentProcess!=null)
 				{
-					if(!proc.getProcessId().equals(aCurrentProcess.getProcessId()) && proc.isProcessAlive())
+					if(!proc.getProcessCodeName().equals(aCurrentProcess.getProcessCodeName()) && proc.isProcessAlive())
 					{
 						vProcesses.add(proc);
 					}
@@ -218,7 +218,7 @@ public class HLProcessMgr
 				{
 					if(proc.isProcessAlive())
 					{
-						if(!proc.getProcessId().equals(terminatingProcess.getProcessId()))
+						if(!proc.getProcessCodeName().equals(terminatingProcess.getProcessCodeName()))
 						{
 							iActiveProcess++;
 						}
@@ -242,7 +242,7 @@ public class HLProcessMgr
 					{
 						if(proc.isProcessAlive())
 						{
-							consolePrintln("   - "+proc.getProcessId()+" : "+proc.getCurProcessState());
+							consolePrintln("   - "+proc.getProcessCodeName()+" : "+proc.getCurProcessState());
 						}
 					}
 				}
@@ -261,7 +261,7 @@ public class HLProcessMgr
 						{
 							if(proc.isProcessAlive())
 							{
-								sb.append("\n ").append(i++).append(". [").append(proc.getProcessId()).append("]:").append(proc.getProcessCommand());
+								sb.append("\n ").append(i++).append(". [").append(proc.getProcessCodeName()).append("]:").append(proc.getProcessCommand());
 							}
 						}
 						
@@ -297,7 +297,7 @@ public class HLProcessMgr
 		{
 			//logger.log(Level.INFO, "All processes terminated");
 			consolePrintln("[Termination] All processes terminated");
-			consolePrintln("[Termination] terminating process : "+terminatingProcess.getProcessId());
+			consolePrintln("[Termination] terminating process : "+terminatingProcess.getProcessCodeName());
 			printProcessLifeCycle();
 		}
 	}
@@ -308,7 +308,7 @@ public class HLProcessMgr
 		{
 			String sRemote = p.isRemoteRef()?" (remote)":"";
 				
-			consolePrintln("[process.lifecycle] "+p.getProcessId()+sRemote+" : "+p.getProcessStateHist());
+			consolePrintln("[process.lifecycle] "+p.getProcessCodeName()+sRemote+" : "+p.getProcessStateHist());
 		}
 	}
 	
@@ -350,7 +350,7 @@ public class HLProcessMgr
 		{
 			if(!p.isRemoteRef())
 			{
-				if(terminatingProcess.getProcessId().equals(p.getProcessId()))
+				if(terminatingProcess.getProcessCodeName().equals(p.getProcessCodeName()))
 				{
 					p.setCurProcessState(ProcessState.STOPPING);
 				}

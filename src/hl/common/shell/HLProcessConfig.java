@@ -579,7 +579,7 @@ public class HLProcessConfig {
 		
 		for(HLProcess p : mapDisabledProcesses.values())
 		{
-			mapProcesses.remove(p.getProcessId());
+			mapProcesses.remove(p.getProcessCodeName());
 		}
 		
 		validateProcessConfigs();
@@ -602,7 +602,7 @@ public class HLProcessConfig {
 						 || p.getProcessStartDelayMs()>0
 						)
 					{
-						throw new RuntimeException("["+p.getProcessId()+"] Remote Process should not have local configuration !");
+						throw new RuntimeException("["+p.getProcessCodeName()+"] Remote Process should not have local configuration !");
 					}
 				}
 				//Dependencies 
@@ -614,14 +614,14 @@ public class HLProcessConfig {
 						HLProcess dep = iter.next();
 						if(dep.isDisabled())
 						{
-							throw new RuntimeException("["+p.getProcessId()+"] Dependence Process is disabled !" + dep.getProcessId());
+							throw new RuntimeException("["+p.getProcessCodeName()+"] Dependence Process is disabled !" + dep.getProcessCodeName());
 						}
 					}
 				}
 				//Process command
 				else if(p.getProcessCommand().trim().length()==0)
 				{
-					throw new RuntimeException("["+p.getProcessId()+"] Process command cannot be empty ! - "+_PROP_KEY_SHELL_CMD);
+					throw new RuntimeException("["+p.getProcessCodeName()+"] Process command cannot be empty ! - "+_PROP_KEY_SHELL_CMD);
 				}
 				else if(p.getProcessCommand().trim().length()>0)
 				{
@@ -633,7 +633,7 @@ public class HLProcessConfig {
 						if(!fileScript.canExecute())
 						{
 							//file permission problem
-							throw new RuntimeException("["+p.getProcessId()+"] Insufficient execution permission - "+_PROP_KEY_SHELL_CMD+":"+p.getProcessCommand());
+							throw new RuntimeException("["+p.getProcessCodeName()+"] Insufficient execution permission - "+_PROP_KEY_SHELL_CMD+":"+p.getProcessCommand());
 						}
 					}
 				}
@@ -647,7 +647,7 @@ public class HLProcessConfig {
 						if(!fileScript.canExecute())
 						{
 							//file permission problem
-							throw new RuntimeException("["+p.getProcessId()+"] Insufficient execution permission - "+_PROP_KEY_SHELL_TERMINATE_CMD+":"+p.getTerminateCommand());
+							throw new RuntimeException("["+p.getProcessCodeName()+"] Insufficient execution permission - "+_PROP_KEY_SHELL_TERMINATE_CMD+":"+p.getTerminateCommand());
 						}
 					}
 				}
@@ -661,7 +661,7 @@ public class HLProcessConfig {
 						if(!fileOutput.canWrite())
 						{
 							//file permission problem
-							throw new RuntimeException("["+p.getProcessId()+"] Insufficient write permission - "+_PROP_KEY_SHELL_TERMINATE_CMD+":"+p.getTerminateCommand());
+							throw new RuntimeException("["+p.getProcessCodeName()+"] Insufficient write permission - "+_PROP_KEY_SHELL_TERMINATE_CMD+":"+p.getTerminateCommand());
 						}
 					}
 					else 
@@ -679,7 +679,7 @@ public class HLProcessConfig {
 						if(!isCreated)
 						{
 							//failed to create logfile
-							throw new RuntimeException("["+p.getProcessId()+"] Invalid process output filename - "+_PROP_KEY_SHELL_OUTPUT_FILENAME+":"+p.getProcessOutputFilename());
+							throw new RuntimeException("["+p.getProcessCodeName()+"] Invalid process output filename - "+_PROP_KEY_SHELL_OUTPUT_FILENAME+":"+p.getProcessOutputFilename());
 						}
 					}
 				}

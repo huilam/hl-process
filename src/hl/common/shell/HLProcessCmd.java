@@ -11,7 +11,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcessCmd 
 {
-	private String id					= null;
+	private String codename				= null;
 	
 	private String output_filename		= null;
 	private int output_autoroll_filecount	= -1;
@@ -64,9 +64,9 @@ public class HLProcessCmd
 		init(aId);
 	}
 	
-	private void init(String aId)
+	private void init(String aCodeName)
 	{
-		this.id = aId;
+		this.codename = aCodeName;
 	}
 	
 	public boolean isProcessAlive()
@@ -125,14 +125,14 @@ public class HLProcessCmd
 		this.commands = aShellCmdList.toArray(new String[aShellCmdList.size()]);
 	}
 	
-	public void setProcessId(String aId)
+	public void setProcessCodeName(String aCodename)
 	{
-		this.id = aId;
+		this.codename = aCodename;
 	}
 	
-	public String getProcessId()
+	public String getProcessCodeName()
 	{
-		return this.id;
+		return this.codename;
 	}	
 	
 	public void setShutdownAllOnTermination(boolean aShutdownAll)
@@ -413,7 +413,7 @@ public class HLProcessCmd
 	
 	public String toString()
 	{
-		String sPrefix = "["+getProcessId()+"]";
+		String sPrefix = "["+getProcessCodeName()+"]";
 		StringBuffer sb = new StringBuffer();
 		
 		sb.append("\n").append(sPrefix).append(HLProcessConfig._PROP_KEY_DISABLED).append("=").append(isDisabled());
@@ -444,7 +444,7 @@ public class HLProcessCmd
 				{
 					sbDeps.append(",");
 				}
-				sbDeps.append(d.getProcessId());
+				sbDeps.append(d.getProcessCodeName());
 				
 				if(d.isRemoteRef())
 					sbDeps.append("(remote)");
