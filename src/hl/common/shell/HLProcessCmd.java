@@ -13,6 +13,8 @@ public class HLProcessCmd
 {
 	private String codename				= null;
 	
+	private String os_pid				= null;
+	
 	private String output_filename		= null;
 	private int output_autoroll_filecount	= -1;
 	private long output_autoroll_sizebytes	= -1;
@@ -352,8 +354,18 @@ public class HLProcessCmd
 		return this.dep_check_interval_ms;
 	}
 	
+	
+	
 	//////////
 	
+	public String getOs_pid() {
+		return os_pid;
+	}
+
+	public void setOs_pid(String os_pid) {
+		this.os_pid = os_pid;
+	}
+
 	public Collection<HLProcess> getDependProcesses()
 	{
 		return depends;
