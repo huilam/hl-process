@@ -38,7 +38,8 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_SHELL							= "shell.";
 	public static String _PROP_KEY_SHELL_CMD_NO_OS	 				= _PROP_KEY_SHELL+"command";
 	public static String _PROP_KEY_SHELL_CMD	 					= _PROP_KEY_SHELL+"command.{os.name}";
-	public static String _PROP_KEY_SHELL_CMD_PREFIX 				= _PROP_KEY_SHELL+"command.{os.name}.prefix";
+	public static String _PROP_KEY_SHELL_CMD_PREFIX_NO_OS 			= _PROP_KEY_SHELL+"command.prefix";
+	public static String _PROP_KEY_SHELL_CMD_PREFIX 				= _PROP_KEY_SHELL+"command.prefix.{os.name}";
 	
 	public static String _PROP_KEY_SHELL_CMD_END_REGEX 				= _PROP_KEY_SHELL+"command.end.regex";
 	public static String _PROP_KEY_SHELL_CMD_IDLE_TIMEOUT_MS 		= _PROP_KEY_SHELL+"command.idle.timeout.ms";
@@ -236,11 +237,21 @@ public class HLProcessConfig {
 				throw new RuntimeException("Please change 'depend(a)nce' to 'depend(e)nce' - "+sKey);
 			}
 			
-			if(_PROP_KEY_SHELL_CMD_PREFIX.equalsIgnoreCase(sKey))
+			if(sKey.startsWith(_PROP_KEY_SHELL_CMD_PREFIX_NO_OS))
 			{
 				if(sVal!=null && sVal.trim().length()>0)
 				{
-					commandPrefix = sVal;
+					if(_PROP_KEY_SHELL_CMD_PREFIX_NO_OS.equalsIgnoreCase(sKey))
+					{
+						if(commandPrefix!=null)
+						{
+							commandPrefix = sVal;
+						}
+					}
+					else if(_PROP_KEY_SHELL_CMD_PREFIX.equalsIgnoreCase(sKey))
+					{
+						commandPrefix = sVal;
+					}
 				}
 				continue;
 			}
