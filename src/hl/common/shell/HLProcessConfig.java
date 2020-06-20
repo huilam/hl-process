@@ -16,7 +16,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import hl.common.shell.HLProcess;
 import hl.common.shell.plugins.output.StateOutput;
 import hl.common.shell.utils.FileUtil;
 import hl.common.shell.utils.PropUtil;
@@ -39,6 +38,8 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_SHELL							= "shell.";
 	public static String _PROP_KEY_SHELL_CMD_NO_OS	 				= _PROP_KEY_SHELL+"command";
 	public static String _PROP_KEY_SHELL_CMD	 					= _PROP_KEY_SHELL+"command.{os.name}";
+	public static String _PROP_KEY_SHELL_CMD_PREFIX 				= _PROP_KEY_SHELL+"command.{os.name}.prefix";
+	
 	public static String _PROP_KEY_SHELL_CMD_END_REGEX 				= _PROP_KEY_SHELL+"command.end.regex";
 	public static String _PROP_KEY_SHELL_CMD_IDLE_TIMEOUT_MS 		= _PROP_KEY_SHELL+"command.idle.timeout.ms";
 	public static String _PROP_KEY_SHELL_CMD_BLOCK					= _PROP_KEY_SHELL+"command.block";
@@ -79,6 +80,7 @@ public class HLProcessConfig {
 	
 	public static String osname 	= null;
 	
+	public static String commandPrefix 	= null;
 	public static char commandSpace = ' ';
 	
 	protected static Pattern pattEnvVar 				= Pattern.compile("\\{(.+?)\\}");
@@ -100,6 +102,8 @@ public class HLProcessConfig {
 			sOsName = "mac";
 		osname = sOsName;
 		_PROP_KEY_SHELL_CMD = _PROP_KEY_SHELL_CMD.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
+		_PROP_KEY_SHELL_CMD_PREFIX = _PROP_KEY_SHELL_CMD_PREFIX.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
+		
 		_PROP_KEY_SHELL_TERMINATE_CMD = _PROP_KEY_SHELL_TERMINATE_CMD.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
 		_PROP_KEY_SHELL_OUTPUT_FILENAME = _PROP_KEY_SHELL_OUTPUT_FILENAME.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
 	}
@@ -143,7 +147,11 @@ public class HLProcessConfig {
 		
 		if(sGrpEnd==null)
 			sGrpEnd = "";
-
+		
+		if(commandPrefix!=null && commandPrefix.trim().length()>0)
+		{
+			aCmdString = commandPrefix + sCmdSpace + "";
+		}
 
 		if(sGrpStart.trim().length()==0 && sGrpEnd.trim().length()==0)
 		{
@@ -228,6 +236,14 @@ public class HLProcessConfig {
 				throw new RuntimeException("Please change 'depend(a)nce' to 'depend(e)nce' - "+sKey);
 			}
 			
+			if(_PROP_KEY_SHELL_CMD_PREFIX.equalsIgnoreCase(sKey))
+			{
+				if(sVal!=null && sVal.trim().length()>0)
+				{
+					commandPrefix = sVal;
+				}
+				continue;
+			}
 			
 			int iPattGrp = 0;
 			m = pattEnvVar.matcher(sVal);
@@ -729,6 +745,7 @@ public class HLProcessConfig {
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_BLOCK).append("=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_END_REGEX).append("=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SHELL_CMD_PREFIX).append("=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".win=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".linux=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".mac=").append(sNewLine);
