@@ -33,13 +33,13 @@ public class HLProcessConfig {
 	//-- SYSTEM
 	public static String _PROP_KEY_SYSTEM							= "system.";
 	public static String _PROP_KEY_SYSTEM_ASCIIART_FOLDER	 		= _PROP_KEY_SYSTEM+"asciiart.folder";
+	public static String _PROP_KEY_SYSTEM_CMD_PREFIX_NO_OS 			= _PROP_KEY_SYSTEM+"command.prefix";
+	public static String _PROP_KEY_SYSTEM_CMD_PREFIX 				= _PROP_KEY_SYSTEM+"command.prefix.{os.name}";
 
 	//-- SHELL
 	public static String _PROP_KEY_SHELL							= "shell.";
 	public static String _PROP_KEY_SHELL_CMD_NO_OS	 				= _PROP_KEY_SHELL+"command";
 	public static String _PROP_KEY_SHELL_CMD	 					= _PROP_KEY_SHELL+"command.{os.name}";
-	public static String _PROP_KEY_SHELL_CMD_PREFIX_NO_OS 			= _PROP_KEY_SHELL+"command.prefix";
-	public static String _PROP_KEY_SHELL_CMD_PREFIX 				= _PROP_KEY_SHELL+"command.prefix.{os.name}";
 	
 	public static String _PROP_KEY_SHELL_CMD_END_REGEX 				= _PROP_KEY_SHELL+"command.end.regex";
 	public static String _PROP_KEY_SHELL_CMD_IDLE_TIMEOUT_MS 		= _PROP_KEY_SHELL+"command.idle.timeout.ms";
@@ -102,8 +102,8 @@ public class HLProcessConfig {
 		else if(sOsName.indexOf("mac")>-1)
 			sOsName = "mac";
 		osname = sOsName;
+		_PROP_KEY_SYSTEM_CMD_PREFIX = _PROP_KEY_SYSTEM_CMD_PREFIX.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
 		_PROP_KEY_SHELL_CMD = _PROP_KEY_SHELL_CMD.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
-		_PROP_KEY_SHELL_CMD_PREFIX = _PROP_KEY_SHELL_CMD_PREFIX.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
 		
 		_PROP_KEY_SHELL_TERMINATE_CMD = _PROP_KEY_SHELL_TERMINATE_CMD.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
 		_PROP_KEY_SHELL_OUTPUT_FILENAME = _PROP_KEY_SHELL_OUTPUT_FILENAME.replaceAll("\\{"+sOsNameAttrKey+"\\}", osname);
@@ -237,18 +237,18 @@ public class HLProcessConfig {
 				throw new RuntimeException("Please change 'depend(a)nce' to 'depend(e)nce' - "+sKey);
 			}
 			
-			if(sKey.startsWith(_PROP_KEY_SHELL_CMD_PREFIX_NO_OS))
+			if(sKey.startsWith(_PROP_KEY_SYSTEM_CMD_PREFIX_NO_OS))
 			{
 				if(sVal!=null && sVal.trim().length()>0)
 				{
-					if(_PROP_KEY_SHELL_CMD_PREFIX_NO_OS.equalsIgnoreCase(sKey))
+					if(_PROP_KEY_SYSTEM_CMD_PREFIX_NO_OS.equalsIgnoreCase(sKey))
 					{
 						if(commandPrefix!=null)
 						{
 							commandPrefix = sVal;
 						}
 					}
-					else if(_PROP_KEY_SHELL_CMD_PREFIX.equalsIgnoreCase(sKey))
+					else if(_PROP_KEY_SYSTEM_CMD_PREFIX.equalsIgnoreCase(sKey))
 					{
 						commandPrefix = sVal;
 					}
@@ -747,6 +747,12 @@ public class HLProcessConfig {
 		sb.append("//--").append(sNewLine);
 		sb.append("/** sample 'process.properties'").append(sNewLine);
 		sb.append("//--").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SYSTEM_ASCIIART_FOLDER).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SYSTEM_CMD_PREFIX_NO_OS).append("=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SYSTEM_CMD_PREFIX_NO_OS).append(".win=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SYSTEM_CMD_PREFIX_NO_OS).append(".linux=").append(sNewLine);
+		sb.append("#").append(_PROP_KEY_SYSTEM_CMD_PREFIX_NO_OS).append(".mac=").append(sNewLine);
+		sb.append("#").append(sNewLine);		
 		sb.append("#").append(_PROP_KEY_DISABLED).append("=false").append(sNewLine);
 		sb.append("#").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_START_DELAY).append("=").append(sNewLine);
@@ -756,7 +762,6 @@ public class HLProcessConfig {
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_BLOCK).append("=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_END_REGEX).append("=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append("=").append(sNewLine);
-		sb.append("#").append(_PROP_KEY_SHELL_CMD_PREFIX).append("=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".win=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".linux=").append(sNewLine);
 		sb.append("#").append(_PROP_KEY_SHELL_CMD_NO_OS).append(".mac=").append(sNewLine);
