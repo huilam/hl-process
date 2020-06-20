@@ -8,8 +8,6 @@ import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import hl.common.shell.HLProcess;
-import hl.common.shell.HLProcessConfig;
 import hl.common.shell.listeners.HLProcessEvent;
 import hl.common.shell.plugins.output.StateOutput;
 import hl.common.shell.utils.TimeUtil;
@@ -33,27 +31,14 @@ public class HLProcessMgr
 		
 		StateOutput.getStateOutput(ProcessState.IDLE);
 		try {		
-			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+			Runtime.getRuntime().addShutdownHook(new Thread(){
 				@Override
 				public void run() {
-					if(terminatingProcess==null)
-					{
-						consolePrintln("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
-						//random pick an active process as terminating process
-						HLProcess p = null;
-						for(HLProcess proc : getAllProcesses())
-						{
-							if(proc.isProcessAlive())
-							{
-								p = proc;
-								break;
-							}
-						}
-						event.onProcessTerminate(p);
-						consolePrintln("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
-					}
+					consolePrintln("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
+					terminateAllProcesses();
+					consolePrintln("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
 				}
-			}));
+			});
 			
 			procConfig = new HLProcessConfig(aPropFileName);
 			
