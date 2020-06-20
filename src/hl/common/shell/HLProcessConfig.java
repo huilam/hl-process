@@ -139,6 +139,12 @@ public class HLProcessConfig {
 	
 	protected static String[] splitCommands(HLProcess aHLProcess, String aCmdString)
 	{
+		
+		if(aCmdString==null || aCmdString.trim().length()==0)
+		{
+			return null;
+		}
+		
 		String sGrpStart = aHLProcess.getCommandBlockStart();
 		String sGrpEnd = aHLProcess.getCommandBlockEnd();
 		String sCmdSpace = String.valueOf(commandSpace);
@@ -151,8 +157,9 @@ public class HLProcessConfig {
 		
 		if(commandPrefix!=null && commandPrefix.trim().length()>0)
 		{
-			aCmdString = commandPrefix + sCmdSpace + "";
+			aCmdString = commandPrefix + sCmdSpace + aCmdString;
 		}
+		
 
 		if(sGrpStart.trim().length()==0 && sGrpEnd.trim().length()==0)
 		{

@@ -331,18 +331,22 @@ public class HLProcessMgr
 	
 	public synchronized void terminateAllProcesses()
 	{		
-		for(HLProcess p : procConfig.getProcesses())
+		if(procConfig!=null)
 		{
-			if(!p.isRemoteRef())
+			for(HLProcess p : procConfig.getProcesses())
 			{
-				if(terminatingProcess.getProcessCodeName().equals(p.getProcessCodeName()))
+				if(!p.isRemoteRef())
 				{
-					p.setCurProcessState(ProcessState.STOPPING);
-				}
-				else if(!p.isTerminating())
-				{
-					p.reqStateChange(terminatingProcess, ProcessState.STOP_REQUEST);
-					p.terminateProcess();
+					if(terminatingProcess!=null && 
+					   terminatingProcess.getProcessCodeName().equals(p.getProcessCodeName()))
+					{
+						p.setCurProcessState(ProcessState.STOPPING);
+					}
+					else if(!p.isTerminating())
+					{
+						p.reqStateChange(terminatingProcess, ProcessState.STOP_REQUEST);
+						p.terminateProcess();
+					}
 				}
 			}
 		}
