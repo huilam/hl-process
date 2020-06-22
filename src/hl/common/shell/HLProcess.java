@@ -841,6 +841,10 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		{
 			setCurProcessState(ProcessState.STOPPING);
 			executeTerminateCmd();
+			if(proc!=null)
+			{
+				proc.destroy();
+			}
 		}
 		
 	}
