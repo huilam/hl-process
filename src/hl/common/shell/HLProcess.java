@@ -679,7 +679,12 @@ public class HLProcess extends HLProcessCmd implements Runnable
 				{
 					sPrefix = "["+sPrefix+"]";
 					
-					System.out.println("[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd);
+					String sLine = "[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd;
+					if(isOutputConsole())
+					{
+						System.out.println(sLine);
+					}
+					logger.log(Level.INFO, sLine);
 					
 					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);
 					
@@ -687,9 +692,60 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					HLProcess procTerminate = new HLProcess(getProcessCodeName()+".terminate", sSplitEndCmd);
 					procTerminate.setCommandEndRegex(getTerminateEndRegex());
 					procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
+					procTerminate.startProcess();
 					
-					Thread t = new Thread(procTerminate);
-					t.start();
+					long lTerminateStart 	= System.currentTimeMillis();
+					long lTerminateElapse 	= 0;
+					long lTerminateTimeoutMs = getTerminateIdleTimeoutMs();
+					BufferedReader rdr = new BufferedReader(new InputStreamReader(procTerminate.proc.getInputStream()));	
+					
+					try {
+						
+						if(rdr.ready())
+						{
+							sLine = "";
+							while(procTerminate.isProcessAlive() && sLine!=null)
+							{
+								sLine = rdr.readLine();
+								
+								if(sLine!=null)
+								{
+									if(isOutputConsole())
+									{
+										System.out.println(sLine);
+									}
+									logger.log(Level.INFO, sLine);
+								}
+								
+								if(lTerminateTimeoutMs>0)
+								{
+									lTerminateElapse = System.currentTimeMillis() - lTerminateStart;
+									
+									if(lTerminateElapse > lTerminateTimeoutMs)
+									{
+										procTerminate.proc.destroy();
+										break;
+									}
+								}
+							}
+							
+						}
+						
+					} catch (IOException e) 
+					{
+						e.printStackTrace();
+					}
+					finally
+					{
+						if(rdr!=null)
+						{
+							try {
+								rdr.close();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+					}
 				}
 			}
 		}	
