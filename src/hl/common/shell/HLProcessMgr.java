@@ -79,26 +79,25 @@ public class HLProcessMgr
 						
 						public void onProcessTerminate(HLProcess p) 
 						{
-							if(p!=null && p.isProcessAlive() && !is_terminating_all)
+							if(!is_terminating_all)
 							{
-								long lterminateStartMs = System.currentTimeMillis();
-								if(p.isShutdownAllOnTermination() && terminatingProcess==null)
+								if(p!=null && p.isProcessAlive())
 								{
-									try {
+									if(p.isShutdownAllOnTermination() && terminatingProcess==null)
+									{
+										long lterminateStartMs = System.currentTimeMillis();
 										terminatingProcess = p;
-										if(isShowStateAsciiArt)
-										{										
-											consolePrintln();
-											consolePrintln(StateOutput.getStateOutput(ProcessState.TERMINATED));
-										}
-										consolePrintln();
-										consolePrintln("[TERMINATE] "+p.getProcessCodeName()+" initial termination ...");
 										terminateAllProcesses();
 										waitForAllProcessesToBeTerminated(terminatingProcess);
-									}finally
-									{
 										consolePrintln("[TERMINATE] Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
 										consolePrintln();
+									}
+									else
+									{
+										if(p.proc!=null)
+										{
+											p.proc.destroy();
+										}
 									}
 								}
 							}
@@ -312,12 +311,7 @@ public class HLProcessMgr
 	}
 	
 	private void printProcessLifeCycle()
-	{
-		if(terminatingProcess==null)
-		{
-			consolePrintln("Shutdown requested by shutdown.");
-		}
-		
+	{	
 		for(HLProcess p : getAllProcesses())
 		{
 			String sRemote = p.isRemoteRef()?" (remote)":"";
@@ -363,6 +357,20 @@ public class HLProcessMgr
 		if(!this.is_terminating_all)
 		{
 			this.is_terminating_all = true;
+			
+			String sTerminateInitiator = "SYSTEM";
+			
+			if(terminatingProcess!=null)
+			{
+				sTerminateInitiator = terminatingProcess.getProcessCodeName();
+			}
+			if(isShowStateAsciiArt)
+			{										
+				consolePrintln();
+				consolePrintln(StateOutput.getStateOutput(ProcessState.TERMINATED));
+			}
+			consolePrintln();
+			consolePrintln("[TERMINATE] "+sTerminateInitiator+" initial termination ...");
 			
 			if(procConfig!=null)
 			{
