@@ -211,7 +211,11 @@ public class HLProcessMgr
 				{
 					if(proc.isProcessAlive())
 					{
-						if(!proc.getProcessCodeName().equals(terminatingProcess.getProcessCodeName()))
+						if(terminatingProcess!=null && proc.getProcessCodeName().equals(terminatingProcess.getProcessCodeName()))
+						{
+							continue;
+						}
+						else
 						{
 							iActiveProcess++;
 						}
