@@ -702,7 +702,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					HLProcess procTerminate = new HLProcess(getProcessCodeName()+".terminate", sSplitEndCmd);
 					procTerminate.setCommandEndRegex(getTerminateEndRegex());
 					procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
-					procTerminate.setOutputConsole(true);
+					procTerminate.setOutputConsole(isOutputConsole());
 					
 					long lTerminateStart = System.currentTimeMillis();
 					Thread t = new Thread(procTerminate);					
