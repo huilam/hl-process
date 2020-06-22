@@ -24,6 +24,8 @@ public class HLProcessMgr
 	private HLProcess terminatingProcess 		= null;
 	private Map<String, Long> mapInitSuccess 	= null;
 	private boolean isShowStateAsciiArt			= true;
+	
+	private static long MIN_in_ms = 60000;
 		
 	public HLProcessMgr(String aPropFileName)
 	{
@@ -195,6 +197,10 @@ public class HLProcessMgr
 				{
 					onlyProcess.terminateProcess();
 				}
+			}
+			else
+			{
+				lShutdown_timeout_ms 	= 15 * MIN_in_ms; 
 			}
 			
 			int iActiveProcess = 1;
