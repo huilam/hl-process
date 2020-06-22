@@ -36,6 +36,7 @@ public class HLProcessMgr
 				public void run() {
 					consolePrintln("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
 					terminateAllProcesses();
+					waitForAllProcessesToBeTerminated(null);
 					consolePrintln("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
 				}
 			});
@@ -282,7 +283,10 @@ public class HLProcessMgr
 		{
 			//logger.log(Level.INFO, "All processes terminated");
 			consolePrintln("[Termination] All processes terminated");
-			consolePrintln("[Termination] terminating process : "+terminatingProcess.getProcessCodeName());
+			if(terminatingProcess!=null)
+			{
+				consolePrintln("[Termination] terminating process : "+terminatingProcess.getProcessCodeName());
+			}
 			printProcessLifeCycle();
 		}
 	}

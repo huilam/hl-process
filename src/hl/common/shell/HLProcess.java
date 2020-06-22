@@ -23,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess beta v0.80";
+	private final static String _VERSION = "HLProcess beta v0.81";
 	
 	public static enum ProcessState 
 	{ 
@@ -832,7 +832,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					lElapseMs = System.currentTimeMillis()-arrStartTimes[i];
 				}
 				
-				if(s.is(ProcessState.STOP_REQUEST))
+				if(s.is(ProcessState.STOP_REQUEST) && processRequestor!=null)
 				{
 					sbState.append("[req:").append(processRequestor.getProcessCodeName()).append("]");
 				}
