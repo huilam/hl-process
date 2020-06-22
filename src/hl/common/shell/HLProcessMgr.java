@@ -36,7 +36,8 @@ public class HLProcessMgr
 				public void run() {
 					consolePrintln("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
 					terminateAllProcesses();
-					waitForAllProcessesToBeTerminated(null);
+					terminatingProcess = null;
+					waitForAllProcessesToBeTerminated(terminatingProcess);
 					consolePrintln("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
 				}
 			});
@@ -293,6 +294,11 @@ public class HLProcessMgr
 	
 	private void printProcessLifeCycle()
 	{
+		if(terminatingProcess==null)
+		{
+			consolePrintln("Shutdown requested by shutdown.");
+		}
+		
 		for(HLProcess p : getAllProcesses())
 		{
 			String sRemote = p.isRemoteRef()?" (remote)":"";
