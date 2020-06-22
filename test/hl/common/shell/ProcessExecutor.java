@@ -32,6 +32,8 @@ public class ProcessExecutor
 					iRemoteCount ++;
 				else
 					iLocalCount ++;
+				
+				System.out.println(processes[i].toString());
 			}
 			
 			int iTotalProcess = processes.length + iDisabledCount;
