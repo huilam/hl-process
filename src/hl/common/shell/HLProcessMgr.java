@@ -20,6 +20,7 @@ public class HLProcessMgr
 	
 	private long startTimestamp					= 0;
 	private HLProcessEvent event 				= null;
+	private boolean is_starting_all 			= false;
 	private boolean is_terminating_all 			= false;
 	private HLProcess terminatingProcess 		= null;
 	private Map<String, Long> mapInitSuccess 	= null;
@@ -71,48 +72,18 @@ public class HLProcessMgr
 								
 								if(mapInitSuccess.size()==getAllProcesses().length)
 								{
-									if(isShowStateAsciiArt)
-									{
-										consolePrintln();
-										consolePrintln(StateOutput.getStateOutput(ProcessState.STARTED));
-									}
-									consolePrintln();
-									int i = 1;
-									SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
-									consolePrintln("[STARTED] All processes are ready.");
-									StringBuffer sb = new StringBuffer();
-									for(String sProcID : mapInitSuccess.keySet())
-									{
-										Long lInitTimeStamp = mapInitSuccess.get(sProcID);
-										
-										if(lInitTimeStamp==null)
-											lInitTimeStamp = 0L;
-										
-										sb.setLength(0);
-										sb.append(i);
-										while(sb.length()<3)
-										{
-											sb.insert(0, " ");
-										}
-										
-										String sFormattedStartTime = lInitTimeStamp==0?"0":df.format(lInitTimeStamp);
-										consolePrintln("[STARTED] "+sb.toString()+"."+sProcID+" started at "+sFormattedStartTime);
-										i++;
-									}
-									consolePrintln("[STARTED] Total Startup Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-getStartTimestamp()));
-									consolePrintln();
+									allProcessInitSuccess();
 								}
 							}
 						}
 						
 						public void onProcessTerminate(HLProcess p) 
 						{
-							if(p!=null)
+							if(p!=null && p.isProcessAlive() && !is_terminating_all)
 							{
 								long lterminateStartMs = System.currentTimeMillis();
 								if(p.isShutdownAllOnTermination() && terminatingProcess==null)
 								{
-									is_terminating_all = true;
 									try {
 										terminatingProcess = p;
 										if(isShowStateAsciiArt)
@@ -139,6 +110,43 @@ public class HLProcessMgr
 		}
 	}
 	
+	private void allProcessInitSuccess()
+	{
+		if(mapInitSuccess.size()==getAllProcesses().length)
+		{
+			if(isShowStateAsciiArt)
+			{
+				consolePrintln();
+				consolePrintln(StateOutput.getStateOutput(ProcessState.STARTED));
+			}
+			consolePrintln();
+			int i = 1;
+			SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
+			consolePrintln("[STARTED] All processes are ready.");
+			StringBuffer sb = new StringBuffer();
+			for(String sProcID : mapInitSuccess.keySet())
+			{
+				Long lInitTimeStamp = mapInitSuccess.get(sProcID);
+				
+				if(lInitTimeStamp==null)
+					lInitTimeStamp = 0L;
+				
+				sb.setLength(0);
+				sb.append(i);
+				while(sb.length()<3)
+				{
+					sb.insert(0, " ");
+				}
+				
+				String sFormattedStartTime = lInitTimeStamp==0?"0":df.format(lInitTimeStamp);
+				consolePrintln("[STARTED] "+sb.toString()+"."+sProcID+" started at "+sFormattedStartTime);
+				i++;
+			}
+			consolePrintln("[STARTED] Total Startup Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-getStartTimestamp()));
+			consolePrintln();
+		}		
+	}
+	
 	private void consolePrintln()
 	{
 		consolePrintln(null);
@@ -156,7 +164,7 @@ public class HLProcessMgr
 		}
 	}
 	
-	private void waitForAllProcessesToBeTerminated(HLProcess aCurrentProcess)
+	private synchronized void waitForAllProcessesToBeTerminated(HLProcess aCurrentProcess)
 	{
 		long lStart = System.currentTimeMillis();
 		long lShutdownElapsed 		= 0;
@@ -289,6 +297,7 @@ public class HLProcessMgr
 			if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
 			{
 				aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
+				aCurrentProcess.proc.destroy();
 			}
 		}finally
 		{
@@ -351,23 +360,29 @@ public class HLProcessMgr
 	
 	public synchronized void terminateAllProcesses()
 	{		
-		if(procConfig!=null)
+		if(!this.is_terminating_all)
 		{
-			for(HLProcess p : procConfig.getProcesses())
+			this.is_terminating_all = true;
+			
+			if(procConfig!=null)
 			{
-				if(!p.isRemoteRef())
+				for(HLProcess p : procConfig.getProcesses())
 				{
-					if(terminatingProcess!=null && 
-					   terminatingProcess.getProcessCodeName().equals(p.getProcessCodeName()))
+					if(!p.isRemoteRef())
 					{
-						p.setCurProcessState(ProcessState.STOPPING);
-					}
-					else if(!p.isTerminating())
-					{
-						p.reqStateChange(terminatingProcess, ProcessState.STOP_REQUEST);
-						p.terminateProcess();
+						if(terminatingProcess!=null && 
+						   terminatingProcess.getProcessCodeName().equals(p.getProcessCodeName()))
+						{
+							p.setCurProcessState(ProcessState.STOPPING);
+						}
+						else if(!p.isTerminating())
+						{
+							p.reqStateChange(terminatingProcess, ProcessState.STOP_REQUEST);
+							p.terminateProcess();
+						}
 					}
 				}
+				
 			}
 		}
 	}
@@ -384,37 +399,40 @@ public class HLProcessMgr
 		if(this.is_terminating_all)
 			return;
 		
-		this.is_terminating_all = false;
-		
-		long lStart = System.currentTimeMillis();
-		int lPendingStart = procConfig.getProcesses().length;
-		
-		while(lPendingStart>0)
+		if(!this.is_starting_all)
 		{
-			for(HLProcess p : procConfig.getProcesses())
+			this.is_starting_all = true;
+			
+			long lStart = System.currentTimeMillis();
+			int lPendingStart = procConfig.getProcesses().length;
+			
+			while(lPendingStart>0)
 			{
-				p.setEventListener(event);
-				if(p.isNotStarting() && p.isNotStarted())
+				for(HLProcess p : procConfig.getProcesses())
 				{
-					long lElapsed = System.currentTimeMillis()-lStart;
-					if(lElapsed >= p.getProcessStartDelayMs())
+					p.setEventListener(event);
+					if(p.isNotStarting() && p.isNotStarted())
 					{
-						if(!p.isRemoteRef())
+						long lElapsed = System.currentTimeMillis()-lStart;
+						if(lElapsed >= p.getProcessStartDelayMs())
 						{
-							p.startProcess();
+							if(!p.isRemoteRef())
+							{
+								p.startProcess();
+							}
+							lPendingStart--;
 						}
-						lPendingStart--;
 					}
 				}
-			}
-			
-			if(lPendingStart>0)
-			{
-				try {
-					Thread.sleep(lSleepMs);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				
+				if(lPendingStart>0)
+				{
+					try {
+						Thread.sleep(lSleepMs);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			}
 		}
