@@ -23,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess beta v0.81";
+	private final static String _VERSION = "HLProcess beta v0.80";
 	
 	public static enum ProcessState 
 	{ 
@@ -492,7 +492,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							long lLastNonIdleTimestamp 	= System.currentTimeMillis();
 							long lIdleTimeoutMs 		= getCommandIdleTimeoutMs();
 							
-							while(proc.isAlive() || sLine!=null)
+							while(!terminate_thread && (proc.isAlive() || sLine!=null))
 							{
 			
 								if(sLine!=null)
@@ -502,6 +502,10 @@ public class HLProcess extends HLProcessCmd implements Runnable
 									if(wrt!=null)
 									{
 										wrt.writeln(sLine);
+									}
+									else
+									{
+										logger.info(sLine);
 									}
 									
 									if(isOutputConsole())
@@ -660,6 +664,11 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			}
 			onProcessTerminate(this);
 			setCurProcessState(ProcessState.TERMINATED);
+			
+			if(proc!=null)
+			{
+				proc.destroy();
+			}
 		}
 	}
 	
@@ -680,11 +689,12 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					sPrefix = "["+sPrefix+"]";
 					
 					String sLine = "[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd;
+					
 					if(isOutputConsole())
 					{
 						System.out.println(sLine);
 					}
-					logger.log(Level.INFO, sLine);
+					logger.info(sLine);
 					
 					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);
 					
@@ -692,60 +702,25 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					HLProcess procTerminate = new HLProcess(getProcessCodeName()+".terminate", sSplitEndCmd);
 					procTerminate.setCommandEndRegex(getTerminateEndRegex());
 					procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
-					procTerminate.startProcess();
+					procTerminate.setOutputConsole(true);
 					
-					long lTerminateStart 	= System.currentTimeMillis();
-					long lTerminateElapse 	= 0;
-					long lTerminateTimeoutMs = getTerminateIdleTimeoutMs();
-					BufferedReader rdr = new BufferedReader(new InputStreamReader(procTerminate.proc.getInputStream()));	
-					
+					long lTerminateStart = System.currentTimeMillis();
+					Thread t = new Thread(procTerminate);					
+					t.start();
 					try {
-						
-						if(rdr.ready())
-						{
-							sLine = "";
-							while(procTerminate.isProcessAlive() && sLine!=null)
-							{
-								sLine = rdr.readLine();
-								
-								if(sLine!=null)
-								{
-									if(isOutputConsole())
-									{
-										System.out.println(sLine);
-									}
-									logger.log(Level.INFO, sLine);
-								}
-								
-								if(lTerminateTimeoutMs>0)
-								{
-									lTerminateElapse = System.currentTimeMillis() - lTerminateStart;
-									
-									if(lTerminateElapse > lTerminateTimeoutMs)
-									{
-										procTerminate.proc.destroy();
-										break;
-									}
-								}
-							}
-							
-						}
-						
-					} catch (IOException e) 
-					{
-						e.printStackTrace();
+						t.join(60000);
+					} catch (InterruptedException e) {
+						logger.severe(e.getMessage());
 					}
-					finally
+					
+					long lElapsed = System.currentTimeMillis() - lTerminateStart;
+					sLine = "[Termination] "+sPrefix+" : terminated command completed. - "+lElapsed+"ms";
+					if(isOutputConsole())
 					{
-						if(rdr!=null)
-						{
-							try {
-								rdr.close();
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						}
+						System.out.println(sLine);
 					}
+					logger.info(sLine);
+
 				}
 			}
 		}	
@@ -841,10 +816,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		{
 			setCurProcessState(ProcessState.STOPPING);
 			executeTerminateCmd();
-			if(proc!=null)
-			{
-				proc.destroy();
-			}
+			terminate_thread = true;
 		}
 		
 	}
@@ -892,7 +864,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					lElapseMs = System.currentTimeMillis()-arrStartTimes[i];
 				}
 				
-				if(s.is(ProcessState.STOP_REQUEST) && processRequestor!=null)
+				if(s.is(ProcessState.STOP_REQUEST))
 				{
 					sbState.append("[req:").append(processRequestor.getProcessCodeName()).append("]");
 				}

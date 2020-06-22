@@ -20,13 +20,12 @@ public class HLProcessMgr
 	
 	private long startTimestamp					= 0;
 	private HLProcessEvent event 				= null;
-	private boolean is_starting_all 			= false;
-	private boolean is_terminating_all 			= false;
-	private HLProcess terminatingProcess 		= null;
 	private Map<String, Long> mapInitSuccess 	= null;
 	private boolean isShowStateAsciiArt			= true;
 	
-	private static long MIN_in_ms = 60000;
+	private HLProcess terminatingProcess 		= null;
+	private boolean is_terminating_all 			= false;
+	private boolean waitingAllProcessTerminate 	= false;
 		
 	public HLProcessMgr(String aPropFileName)
 	{
@@ -37,11 +36,26 @@ public class HLProcessMgr
 			Runtime.getRuntime().addShutdownHook(new Thread(){
 				@Override
 				public void run() {
-					consolePrintln("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
+					System.out.println("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
+					//random pick an active process as terminating process
+					for(HLProcess proc : getAllProcesses())
+					{
+						if(proc.isProcessAlive())
+						{
+							terminatingProcess = proc;
+							
+							if(proc.isShutdownAllOnTermination())
+							{
+								break;
+							}
+						}
+					}
+
 					terminateAllProcesses();
-					terminatingProcess = null;
 					waitForAllProcessesToBeTerminated(terminatingProcess);
-					consolePrintln("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
+					
+					System.out.println("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
+					System.exit(0);
 				}
 			});
 			
@@ -72,34 +86,24 @@ public class HLProcessMgr
 								
 								if(mapInitSuccess.size()==getAllProcesses().length)
 								{
-									allProcessInitSuccess();
+									allProcessesStarted();
 								}
 							}
 						}
 						
 						public void onProcessTerminate(HLProcess p) 
 						{
-							if(p!=null && p.isProcessAlive() && !is_terminating_all)
+							if(p!=null)
 							{
-								long lterminateStartMs = System.currentTimeMillis();
-								if(p.isShutdownAllOnTermination() && terminatingProcess==null)
+								if(p.isShutdownAllOnTermination() && !is_terminating_all)
 								{
-									try {
-										terminatingProcess = p;
-										if(isShowStateAsciiArt)
-										{										
-											consolePrintln();
-											consolePrintln(StateOutput.getStateOutput(ProcessState.TERMINATED));
-										}
-										consolePrintln();
-										consolePrintln("[TERMINATE] "+p.getProcessCodeName()+" initial termination ...");
-										terminateAllProcesses();
-										waitForAllProcessesToBeTerminated(terminatingProcess);
-									}finally
-									{
-										consolePrintln("[TERMINATE] Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
-										consolePrintln();
-									}
+									long lterminateStartMs = System.currentTimeMillis();
+									terminatingProcess = p;
+									terminateAllProcesses();
+									waitForAllProcessesToBeTerminated(terminatingProcess);
+									consolePrintln("[TERMINATE] Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
+									consolePrintln();
+
 								}
 							}
 						}
@@ -110,41 +114,38 @@ public class HLProcessMgr
 		}
 	}
 	
-	private void allProcessInitSuccess()
+	private void allProcessesStarted()
 	{
-		if(mapInitSuccess.size()==getAllProcesses().length)
+		if(isShowStateAsciiArt)
 		{
-			if(isShowStateAsciiArt)
-			{
-				consolePrintln();
-				consolePrintln(StateOutput.getStateOutput(ProcessState.STARTED));
-			}
 			consolePrintln();
-			int i = 1;
-			SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
-			consolePrintln("[STARTED] All processes are ready.");
-			StringBuffer sb = new StringBuffer();
-			for(String sProcID : mapInitSuccess.keySet())
+			consolePrintln(StateOutput.getStateOutput(ProcessState.STARTED));
+		}
+		consolePrintln();
+		int i = 1;
+		SimpleDateFormat df = new SimpleDateFormat("MMM-dd HH:mm:ss.SSS");
+		consolePrintln("[STARTED] All processes are ready.");
+		StringBuffer sb = new StringBuffer();
+		for(String sProcID : mapInitSuccess.keySet())
+		{
+			Long lInitTimeStamp = mapInitSuccess.get(sProcID);
+			
+			if(lInitTimeStamp==null)
+				lInitTimeStamp = 0L;
+			
+			sb.setLength(0);
+			sb.append(i);
+			while(sb.length()<3)
 			{
-				Long lInitTimeStamp = mapInitSuccess.get(sProcID);
-				
-				if(lInitTimeStamp==null)
-					lInitTimeStamp = 0L;
-				
-				sb.setLength(0);
-				sb.append(i);
-				while(sb.length()<3)
-				{
-					sb.insert(0, " ");
-				}
-				
-				String sFormattedStartTime = lInitTimeStamp==0?"0":df.format(lInitTimeStamp);
-				consolePrintln("[STARTED] "+sb.toString()+"."+sProcID+" started at "+sFormattedStartTime);
-				i++;
+				sb.insert(0, " ");
 			}
-			consolePrintln("[STARTED] Total Startup Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-getStartTimestamp()));
-			consolePrintln();
-		}		
+			
+			String sFormattedStartTime = lInitTimeStamp==0?"0":df.format(lInitTimeStamp);
+			consolePrintln("[STARTED] "+sb.toString()+"."+sProcID+" started at "+sFormattedStartTime);
+			i++;
+		}
+		consolePrintln("[STARTED] Total Startup Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-getStartTimestamp()));
+		consolePrintln();		
 	}
 	
 	private void consolePrintln()
@@ -166,6 +167,11 @@ public class HLProcessMgr
 	
 	private synchronized void waitForAllProcessesToBeTerminated(HLProcess aCurrentProcess)
 	{
+		if(this.waitingAllProcessTerminate)
+			return;
+		
+		this.waitingAllProcessTerminate = true;
+		
 		long lStart = System.currentTimeMillis();
 		long lShutdownElapsed 		= 0;
 		long lShutdown_timeout_ms 	= 0;
@@ -180,15 +186,15 @@ public class HLProcessMgr
 	
 			for(HLProcess proc : getAllProcesses())
 			{
-				if(aCurrentProcess!=null)
+				if(proc.isProcessAlive())
 				{
-					if(!proc.getProcessCodeName().equals(aCurrentProcess.getProcessCodeName()) && proc.isProcessAlive())
+					if(aCurrentProcess!=null)
 					{
-						vProcesses.add(proc);
+						if(proc.getProcessCodeName().equals(aCurrentProcess.getProcessCodeName()))
+						{
+							continue;
+						}
 					}
-				}
-				else
-				{
 					vProcesses.add(proc);
 				}
 			}
@@ -206,10 +212,6 @@ public class HLProcessMgr
 					onlyProcess.terminateProcess();
 				}
 			}
-			else
-			{
-				lShutdown_timeout_ms 	= 15 * MIN_in_ms; 
-			}
 			
 			int iActiveProcess = 1;
 			while(iActiveProcess>0)
@@ -217,73 +219,76 @@ public class HLProcessMgr
 				iActiveProcess = 0;
 				for(HLProcess proc : vProcesses)
 				{
-					if(proc.isProcessAlive())
+					if(!proc.isTerminated())
 					{
-						if(terminatingProcess!=null && proc.getProcessCodeName().equals(terminatingProcess.getProcessCodeName()))
+						if(terminatingProcess!=null)
 						{
-							continue;
+							if(terminatingProcess.getProcessCodeName().equalsIgnoreCase(proc.getProcessCodeName()))
+								continue;
 						}
-						else
-						{
-							iActiveProcess++;
-						}
+						
+						iActiveProcess++;
 					}
 					else
 					{
-						if(!proc.isTerminated())
+						if(proc.isProcessAlive())
 						{
-							proc.setCurProcessState(ProcessState.TERMINATED);
+							proc.terminate_thread = true;
 						}
 					}
 				}
 				
 				lShutdownElapsed = System.currentTimeMillis() - lStart;
 				
-				if(iActiveProcess>0 && (System.currentTimeMillis()-lLast_notification_ms>=1000))
+				if(iActiveProcess>0)
 				{
-					lLast_notification_ms = System.currentTimeMillis();
-					consolePrintln("[Termination] Waiting "+iActiveProcess+" processes ... "+TimeUtil.milisec2Words(lShutdownElapsed));
-					for(HLProcess proc : vProcesses)
+					if((System.currentTimeMillis()-lLast_notification_ms>=1000))
 					{
-						if(proc.isProcessAlive())
+						lLast_notification_ms = System.currentTimeMillis();
+						consolePrintln("[Termination] Waiting "+iActiveProcess+" processes ... "+TimeUtil.milisec2Words(lShutdownElapsed));
+						for(HLProcess proc : vProcesses)
 						{
-							consolePrintln("   - "+proc.getProcessCodeName()+" : "+proc.getCurProcessState());
-						}
-					}
-				}
-				
-				if(lShutdown_timeout_ms>0)
-				{	
-					if(lShutdownElapsed >= lShutdown_timeout_ms)
-					{
-						//kill all 
-						StringBuffer sb = new StringBuffer();
-						
-						sb.append("[Termination] Shutdown timeout - ").append(lShutdown_timeout_ms).append("ms, processes pending termination:");
-						
-						int i = 1;
-						for(HLProcess proc : getAllProcesses())
-						{
-							if(proc.isProcessAlive())
+							if(!proc.isTerminated())
 							{
-								sb.append("\n ").append(i++).append(". [").append(proc.getProcessCodeName()).append("]:").append(proc.getProcessCommand());
+								consolePrintln("   - "+proc.getProcessCodeName()+" : "+proc.getCurProcessState());
 							}
 						}
-						
-						if(aCurrentProcess!=null)
+					}
+					
+					
+					if(lShutdown_timeout_ms>0)
+					{	
+						if(lShutdownElapsed >= lShutdown_timeout_ms)
 						{
-							aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS_TIMEOUT);
+							//kill all 
+							StringBuffer sb = new StringBuffer();
+							
+							sb.append("[Termination] Shutdown timeout - ").append(lShutdown_timeout_ms).append("ms, processes pending termination:");
+							
+							int i = 1;
+							for(HLProcess proc : getAllProcesses())
+							{
+								if(proc.isProcessAlive())
+								{
+									sb.append("\n ").append(i++).append(". [").append(proc.getProcessCodeName()).append("]:").append(proc.getProcessCommand());
+								}
+							}
+							
+							if(aCurrentProcess!=null)
+							{
+								aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS_TIMEOUT);
+							}
+			
+							//logger.log(Level.WARNING, sb.toString());
+							consolePrintln(sb.toString());
+							consolePrintln("[Termination] execute 'System.exit(1)'");
+							if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
+							{
+								aCurrentProcess.terminate_thread = true;
+							}
+							printProcessLifeCycle();
+							System.exit(1);
 						}
-		
-						//logger.log(Level.WARNING, sb.toString());
-						consolePrintln(sb.toString());
-						consolePrintln("[Termination] execute 'System.exit(1)'");
-						if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
-						{
-							aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
-						}
-						printProcessLifeCycle();
-						System.exit(1);
 					}
 				}
 				
@@ -294,30 +299,24 @@ public class HLProcessMgr
 					e.printStackTrace();
 				}
 			}
+			
 			if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
 			{
-				aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
-				aCurrentProcess.proc.destroy();
+				aCurrentProcess.terminate_thread = true;
 			}
+			
 		}finally
 		{
+			
 			//logger.log(Level.INFO, "All processes terminated");
 			consolePrintln("[Termination] All processes terminated");
-			if(terminatingProcess!=null)
-			{
-				consolePrintln("[Termination] terminating process : "+terminatingProcess.getProcessCodeName());
-			}
+			consolePrintln("[Termination] terminating process : "+terminatingProcess!=null?terminatingProcess.getProcessCodeName():"none");
 			printProcessLifeCycle();
 		}
 	}
 	
 	private void printProcessLifeCycle()
 	{
-		if(terminatingProcess==null)
-		{
-			consolePrintln("Shutdown requested by shutdown.");
-		}
-		
 		for(HLProcess p : getAllProcesses())
 		{
 			String sRemote = p.isRemoteRef()?" (remote)":"";
@@ -360,29 +359,41 @@ public class HLProcessMgr
 	
 	public synchronized void terminateAllProcesses()
 	{		
-		if(!this.is_terminating_all)
-		{
-			this.is_terminating_all = true;
+		if(this.is_terminating_all)
+			return;
 			
-			if(procConfig!=null)
+		this.is_terminating_all = true;
+		
+		String sTerminateReq = "SYSTEM";
+		if(terminatingProcess!=null)
+		{
+			sTerminateReq = terminatingProcess.getProcessCodeName();
+		}
+		if(isShowStateAsciiArt)
+		{										
+			consolePrintln();
+			consolePrintln(StateOutput.getStateOutput(ProcessState.TERMINATED));
+		}
+		consolePrintln();
+		consolePrintln("[TERMINATE] "+sTerminateReq+" initial termination ...");		
+
+		if(procConfig!=null)
+		{
+			for(HLProcess p : procConfig.getProcesses())
 			{
-				for(HLProcess p : procConfig.getProcesses())
+				if(!p.isRemoteRef())
 				{
-					if(!p.isRemoteRef())
+					if(terminatingProcess!=null && 
+					   terminatingProcess.getProcessCodeName().equals(p.getProcessCodeName()))
 					{
-						if(terminatingProcess!=null && 
-						   terminatingProcess.getProcessCodeName().equals(p.getProcessCodeName()))
-						{
-							p.setCurProcessState(ProcessState.STOPPING);
-						}
-						else if(!p.isTerminating())
-						{
-							p.reqStateChange(terminatingProcess, ProcessState.STOP_REQUEST);
-							p.terminateProcess();
-						}
+						p.setCurProcessState(ProcessState.STOPPING);
+					}
+					else if(!p.isTerminating())
+					{
+						p.reqStateChange(terminatingProcess, ProcessState.STOP_REQUEST);
+						p.terminateProcess();
 					}
 				}
-				
 			}
 		}
 	}
@@ -399,40 +410,37 @@ public class HLProcessMgr
 		if(this.is_terminating_all)
 			return;
 		
-		if(!this.is_starting_all)
+		this.is_terminating_all = false;
+		
+		long lStart = System.currentTimeMillis();
+		int lPendingStart = procConfig.getProcesses().length;
+		
+		while(lPendingStart>0)
 		{
-			this.is_starting_all = true;
-			
-			long lStart = System.currentTimeMillis();
-			int lPendingStart = procConfig.getProcesses().length;
-			
-			while(lPendingStart>0)
+			for(HLProcess p : procConfig.getProcesses())
 			{
-				for(HLProcess p : procConfig.getProcesses())
+				p.setEventListener(event);
+				if(p.isNotStarting() && p.isNotStarted())
 				{
-					p.setEventListener(event);
-					if(p.isNotStarting() && p.isNotStarted())
+					long lElapsed = System.currentTimeMillis()-lStart;
+					if(lElapsed >= p.getProcessStartDelayMs())
 					{
-						long lElapsed = System.currentTimeMillis()-lStart;
-						if(lElapsed >= p.getProcessStartDelayMs())
+						if(!p.isRemoteRef())
 						{
-							if(!p.isRemoteRef())
-							{
-								p.startProcess();
-							}
-							lPendingStart--;
+							p.startProcess();
 						}
+						lPendingStart--;
 					}
 				}
-				
-				if(lPendingStart>0)
-				{
-					try {
-						Thread.sleep(lSleepMs);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+			}
+			
+			if(lPendingStart>0)
+			{
+				try {
+					Thread.sleep(lSleepMs);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		}

@@ -49,6 +49,7 @@ public class HLProcessCmd
 	private boolean remote_ref			= false;
 	private String remote_hostname		= null;
 
+	protected boolean terminate_thread 	= false;
 	protected Thread thread 			= null;
 	protected Process proc 				= null; 
 	
