@@ -57,12 +57,8 @@ public class ProcessExecutor
 					procMgr.startAllProcesses();
 				}
 			};
-			t.run();
-			
-			while(t.isAlive())
-			{
-				t.wait(60000);
-			}
+			t.start();
+			t.join();
 		}
 		finally
 		{
