@@ -2,9 +2,12 @@ package hl.common.shell;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -231,9 +234,9 @@ public class HLProcessMgr
 					}
 					else
 					{
-						if(proc.isProcessAlive())
+						if(!proc.isTerminated())
 						{
-							proc.terminate_thread = true;
+							proc.terminateProcess();
 						}
 					}
 				}
@@ -300,19 +303,57 @@ public class HLProcessMgr
 				}
 			}
 			
-			if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
-			{
-				aCurrentProcess.terminate_thread = true;
-			}
-			
 		}finally
 		{
 			
+			if(aCurrentProcess!=null)
+			{
+				aCurrentProcess.terminateProcess();
+				
+				if(aCurrentProcess.isProcessAlive())
+				{
+					try {
+						aCurrentProcess.proc.waitFor(60, TimeUnit.SECONDS);
+					} catch (InterruptedException e) {
+					}
+				}
+			}
+			
 			//logger.log(Level.INFO, "All processes terminated");
 			consolePrintln("[Termination] All processes terminated");
-			consolePrintln("[Termination] terminating process : "+terminatingProcess!=null?terminatingProcess.getProcessCodeName():"none");
+			
+			String sTerminateRequestor = terminatingProcess!=null?terminatingProcess.getProcessCodeName():"none";
+			consolePrintln("[Termination] terminating process : "+sTerminateRequestor);
 			printProcessLifeCycle();
+			
+			/**
+			StringBuffer sb = new StringBuffer();
+			for(HLProcess hlproc : getAllProcesses())
+			{
+				String sPrefix = "[terminate."+hlproc.getProcessCodeName()+"]";
+				sb.setLength(0);
+				sb.append("\n").append(sPrefix).append(" curProcessState:").append(hlproc.getCurProcessState());
+				sb.append("\n").append(sPrefix).append(" proc.isAlive:").append(hlproc.proc!=null?hlproc.proc.isAlive():null);
+				sb.append("\n").append(sPrefix).append(" thread.isAlive()").append(hlproc.thread!=null?hlproc.thread.isAlive():null);
+
+				consolePrintln(sb.toString());
+			}
+			**/
+			
 		}
+	}
+	
+	public HLProcess[] getActiveProcesses()
+	{
+		List<HLProcess> listProcess = new ArrayList<HLProcess>();
+		for(HLProcess hlproc : getAllProcesses())
+		{
+			if(hlproc.isProcessAlive())
+			{
+				listProcess.add(hlproc);
+			}
+		}
+		return listProcess.toArray(new HLProcess[listProcess.size()]);
 	}
 	
 	private void printProcessLifeCycle()

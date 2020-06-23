@@ -49,7 +49,20 @@ public class ProcessExecutor
 			}
 			System.out.println("Starting processes ...");
 			System.out.println();
-			procMgr.startAllProcesses();
+			
+			Thread t = new Thread()
+			{
+				public void run()
+				{
+					procMgr.startAllProcesses();
+				}
+			};
+			t.run();
+			
+			while(t.isAlive())
+			{
+				t.wait(60000);
+			}
 		}
 		finally
 		{

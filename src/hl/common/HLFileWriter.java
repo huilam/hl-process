@@ -218,7 +218,10 @@ public class HLFileWriter{
 	public void flush() throws IOException
 	{
 		checkRepeat();
-		writer.flush();
+		if(writer!=null)
+		{
+			writer.flush();
+		}
 	}
 	
 	public void newLine() throws IOException

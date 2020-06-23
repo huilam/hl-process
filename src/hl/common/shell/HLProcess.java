@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -485,15 +486,18 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							{
 								pattCmdEnd = Pattern.compile(sCmdEndRegex);
 							}
-							
-							if(rdr.ready())
-								sLine = rdr.readLine();
-							
+														
 							long lLastNonIdleTimestamp 	= System.currentTimeMillis();
 							long lIdleTimeoutMs 		= getCommandIdleTimeoutMs();
 							
-							while(!terminate_thread && (proc.isAlive() || sLine!=null))
+							if(rdr.ready())
 							{
+								sLine = "";
+							}
+							
+							while(!terminate_thread && proc.isAlive())
+							{
+								sLine = rdr.readLine();
 			
 								if(sLine!=null)
 								{
@@ -602,12 +606,12 @@ public class HLProcess extends HLProcessCmd implements Runnable
 										break;
 									}
 								}
-								
-								sLine = null;
-								if(rdr.ready())
-								{
-									sLine = rdr.readLine();
-								}
+
+							}
+							
+							if(proc!=null)
+							{
+								proc.destroy();
 							}
 							
 						} catch (Throwable e) {
@@ -664,12 +668,8 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			}
 			onProcessTerminate(this);
 			setCurProcessState(ProcessState.TERMINATED);
-			
-			if(proc!=null)
-			{
-				proc.destroy();
-			}
 		}
+		System.exit(this.exit_value);
 	}
 	
 	private boolean executeTerminateCmd()
@@ -812,10 +812,19 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	
 	public void terminateProcess()
 	{
-		if(getCurProcessState().isBefore(ProcessState.STOPPING))
+		if(getCurProcessState().isBefore(ProcessState.STOPPING)
+		|| getCurProcessState().is(ProcessState.STOP_WAIT_OTHERS)
+		|| getCurProcessState().is(ProcessState.STOP_WAIT_OTHERS_TIMEOUT))
 		{
-			setCurProcessState(ProcessState.STOPPING);
+			if(getCurProcessState().isBefore(ProcessState.STOPPING))
+			{
+				setCurProcessState(ProcessState.STOPPING);
+			}
 			executeTerminateCmd();
+			if(proc!=null)
+			{
+				proc.destroy();
+			}
 			terminate_thread = true;
 		}
 		
