@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,89 +31,88 @@ public class HLProcessMgr
 		
 	public HLProcessMgr(String aPropFileName)
 	{
+		try {
+			procConfig = new HLProcessConfig(aPropFileName);
+		} catch (IOException e1) {
+			throw new RuntimeException(e1);
+		}
+		
 		mapInitSuccess = new LinkedHashMap<String, Long>();
 		
 		StateOutput.getStateOutput(ProcessState.IDLE);
-		try {		
-			Runtime.getRuntime().addShutdownHook(new Thread(){
-				@Override
-				public void run() {
-					System.out.println("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
-					//random pick an active process as terminating process
-					for(HLProcess proc : getAllProcesses())
+			
+		event = new HLProcessEvent()
+				{
+					public void onProcessStarting(HLProcess p) {
+					}
+					
+					public void onProcessError(HLProcess p, Throwable e) {
+					}
+
+					public void onProcessInitSuccess(HLProcess p) 
 					{
-						if(proc.isProcessAlive())
+						if(is_terminating_all)
+							return;
+						
+						if(p.getCurProcessState().isAtLeast(ProcessState.STARTED))
 						{
-							terminatingProcess = proc;
+							mapInitSuccess.put(p.getProcessCodeName(), new Long(System.currentTimeMillis()));
 							
-							if(proc.isShutdownAllOnTermination())
+							if(mapInitSuccess.size()==getAllProcesses().length)
 							{
-								break;
+								allProcessesStarted();
 							}
 						}
 					}
-
-					terminateAllProcesses();
-					waitForAllProcessesToBeTerminated(terminatingProcess);
 					
-					System.out.println("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
-					System.exit(0);
-				}
-			});
-			
-			procConfig = new HLProcessConfig(aPropFileName);
-			
-			event = new HLProcessEvent()
+					public void onProcessTerminate(HLProcess p) 
 					{
-						public void onProcessStarting(HLProcess p) {
-						}
-						
-						public void onProcessError(HLProcess p, Throwable e) {
-						}
-
-						public void onProcessInitSuccess(HLProcess p) 
+						if(p!=null)
 						{
-							if(is_terminating_all)
-								return;
-							
-							if(p.getCurProcessState().isAtLeast(ProcessState.STARTED))
+							if(p.isShutdownAllOnTermination() && !is_terminating_all)
 							{
-								/**
-								if(mapInitSuccess==null)
-								{
-									mapInitSuccess = new LinkedHashMap<String, Long>();
-								}
-								**/
-								mapInitSuccess.put(p.getProcessCodeName(), new Long(System.currentTimeMillis()));
-								
-								if(mapInitSuccess.size()==getAllProcesses().length)
-								{
-									allProcessesStarted();
-								}
+								long lterminateStartMs = System.currentTimeMillis();
+								terminatingProcess = p;
+								terminateAllProcesses();
+								waitForAllProcessesToBeTerminated(terminatingProcess);
+								consolePrintln("[TERMINATE] Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
+								consolePrintln();
+
 							}
 						}
-						
-						public void onProcessTerminate(HLProcess p) 
-						{
-							if(p!=null)
-							{
-								if(p.isShutdownAllOnTermination() && !is_terminating_all)
-								{
-									long lterminateStartMs = System.currentTimeMillis();
-									terminatingProcess = p;
-									terminateAllProcesses();
-									waitForAllProcessesToBeTerminated(terminatingProcess);
-									consolePrintln("[TERMINATE] Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
-									consolePrintln();
+					}
+				};
 
-								}
-							}
+		
+		regShutdownHook();
+	}
+	
+	private void regShutdownHook()
+	{
+		Runtime.getRuntime().addShutdownHook(new Thread(){
+			@Override
+			public void run() {
+				System.out.println("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
+				//random pick an active process as terminating process
+				for(HLProcess proc : getAllProcesses())
+				{
+					if(proc.isProcessAlive())
+					{
+						terminatingProcess = proc;
+						
+						if(proc.isShutdownAllOnTermination())
+						{
+							break;
 						}
-					};
-			
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+					}
+				}
+
+				terminateAllProcesses();
+				waitForAllProcessesToBeTerminated(terminatingProcess);
+				
+				System.out.println("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
+			}
+		});		
 	}
 	
 	private void allProcessesStarted()
@@ -217,6 +215,7 @@ public class HLProcessMgr
 			}
 			
 			int iActiveProcess = 1;
+			int lastActiveProcess = 0;
 			while(iActiveProcess>0)
 			{
 				iActiveProcess = 0;
@@ -224,9 +223,9 @@ public class HLProcessMgr
 				{
 					if(!proc.isTerminated())
 					{
-						if(terminatingProcess!=null)
+						if(aCurrentProcess!=null)
 						{
-							if(terminatingProcess.getProcessCodeName().equalsIgnoreCase(proc.getProcessCodeName()))
+							if(aCurrentProcess.getProcessCodeName().equalsIgnoreCase(proc.getProcessCodeName()))
 								continue;
 						}
 						
@@ -245,7 +244,7 @@ public class HLProcessMgr
 				
 				if(iActiveProcess>0)
 				{
-					if((System.currentTimeMillis()-lLast_notification_ms>=1000))
+					if((System.currentTimeMillis()-lLast_notification_ms>=1000) || iActiveProcess!=lastActiveProcess)
 					{
 						lLast_notification_ms = System.currentTimeMillis();
 						consolePrintln("[Termination] Waiting "+iActiveProcess+" processes ... "+TimeUtil.milisec2Words(lShutdownElapsed));
@@ -256,6 +255,8 @@ public class HLProcessMgr
 								consolePrintln("   - "+proc.getProcessCodeName()+" : "+proc.getCurProcessState());
 							}
 						}
+						
+						lastActiveProcess = iActiveProcess;
 					}
 					
 					
@@ -287,35 +288,29 @@ public class HLProcessMgr
 							consolePrintln("[Termination] execute 'System.exit(1)'");
 							if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
 							{
-								aCurrentProcess.terminate_thread = true;
+								aCurrentProcess.terminateProcess();
 							}
 							printProcessLifeCycle();
 							System.exit(1);
 						}
 					}
+					///////
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
 				
-				///////
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
 			}
 			
 		}finally
-		{
-			
+		{	
 			if(aCurrentProcess!=null)
 			{
-				aCurrentProcess.terminateProcess();
-				
 				if(aCurrentProcess.isProcessAlive())
 				{
-					try {
-						aCurrentProcess.proc.waitFor(60, TimeUnit.SECONDS);
-					} catch (InterruptedException e) {
-					}
+					aCurrentProcess.terminateProcess();
 				}
 			}
 			

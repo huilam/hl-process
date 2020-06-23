@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -490,14 +489,13 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							long lLastNonIdleTimestamp 	= System.currentTimeMillis();
 							long lIdleTimeoutMs 		= getCommandIdleTimeoutMs();
 							
-							if(rdr.ready())
-							{
-								sLine = "";
-							}
-							
+							sLine = null;
 							while(!terminate_thread && proc.isAlive())
 							{
-								sLine = rdr.readLine();
+								if(rdr.ready())
+								{
+									sLine = rdr.readLine();
+								}
 			
 								if(sLine!=null)
 								{
@@ -584,6 +582,8 @@ public class HLProcess extends HLProcessCmd implements Runnable
 											
 										}
 									}
+									
+									sLine = null;
 								}
 								else
 								{
@@ -703,24 +703,14 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					procTerminate.setCommandEndRegex(getTerminateEndRegex());
 					procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
 					procTerminate.setOutputConsole(isOutputConsole());
-					
-					long lTerminateStart = System.currentTimeMillis();
+					procTerminate.setRunAsDaemon(isRunAsDaemon());
 					Thread t = new Thread(procTerminate);					
 					t.start();
 					try {
-						t.join(60000);
+						t.join(500);
 					} catch (InterruptedException e) {
-						logger.severe(e.getMessage());
+						logger.warning(e.getMessage());
 					}
-					
-					long lElapsed = System.currentTimeMillis() - lTerminateStart;
-					sLine = "[Termination] "+sPrefix+" : terminated command completed. - "+lElapsed+"ms";
-					if(isOutputConsole())
-					{
-						System.out.println(sLine);
-					}
-					logger.info(sLine);
-
 				}
 			}
 		}	
