@@ -24,7 +24,7 @@ public class ProcessExecutor
 			HLProcessMgr procMgr = new HLProcessMgr(sPropFileName);
 			int iLocalCount 	= 0;
 			int iRemoteCount 	= 0;
-			int iDisabledCount 	= procMgr.getDisabledProcesses().length;;
+			int iDisabledCount 	= procMgr.getDisabledProcesses().length;
 			HLProcess[] processes = procMgr.getAllProcesses();
 			for(int i=0; i<processes.length; i++)
 			{

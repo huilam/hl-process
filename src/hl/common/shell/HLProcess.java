@@ -23,7 +23,7 @@ import hl.common.shell.utils.TimeUtil;
 
 public class HLProcess extends HLProcessCmd implements Runnable
 {
-	private final static String _VERSION = "HLProcess beta v0.80";
+	private final static String _VERSION = "HLProcess beta v0.81";
 	
 	public static enum ProcessState 
 	{ 
@@ -37,7 +37,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		STARTED_IDLE_TIMEOUT(30), STOP_REQUEST(31), 
 		
 		STOPPING(40), STOP_EXEC_CMD_PENDING(41), STOP_EXEC_CMD_PENDING_TIMEOUT(42), STOP_EXEC_CMD(43), 
-		STOP_WAIT_OTHERS(44), STOP_WAIT_OTHERS_TIMEOUT(45),
+		STOP_WAIT_OTHERS_TERMINATE(44), STOP_WAIT_OTHERS_TERMINATE_TIMEOUT(45),
 		
 		TERMINATED(50);
 		
@@ -666,7 +666,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		}
 	}
 	
-	private boolean executeTerminateCmd()
+	public boolean executeTerminateCmd()
 	{
 		boolean isExecuted = false;
 		if(!this.is_exec_terminate_cmd)
@@ -797,8 +797,8 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	public void terminateProcess()
 	{
 		if(getCurProcessState().isBefore(ProcessState.STOPPING)
-		|| getCurProcessState().is(ProcessState.STOP_WAIT_OTHERS)
-		|| getCurProcessState().is(ProcessState.STOP_WAIT_OTHERS_TIMEOUT))
+		|| getCurProcessState().is(ProcessState.STOP_WAIT_OTHERS_TERMINATE)
+		|| getCurProcessState().is(ProcessState.STOP_WAIT_OTHERS_TERMINATE_TIMEOUT))
 		{
 			if(getCurProcessState().isBefore(ProcessState.STOPPING))
 			{

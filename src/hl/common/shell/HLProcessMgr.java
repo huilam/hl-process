@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -182,7 +183,7 @@ public class HLProcessMgr
 		try {
 			if(aCurrentProcess!=null)
 			{
-				aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS);
+				aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS_TERMINATE);
 			}
 	
 			for(HLProcess proc : getAllProcesses())
@@ -280,7 +281,7 @@ public class HLProcessMgr
 							
 							if(aCurrentProcess!=null)
 							{
-								aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS_TIMEOUT);
+								aCurrentProcess.setCurProcessState(ProcessState.STOP_WAIT_OTHERS_TERMINATE_TIMEOUT);
 							}
 			
 							//logger.log(Level.WARNING, sb.toString());
@@ -310,7 +311,24 @@ public class HLProcessMgr
 			{
 				if(aCurrentProcess.isProcessAlive())
 				{
-					aCurrentProcess.terminateProcess();
+					aCurrentProcess.executeTerminateCmd();
+					aCurrentProcess.setCurProcessState(ProcessState.TERMINATED);
+					aCurrentProcess.terminate_thread = true;
+				}
+				
+				if(aCurrentProcess.proc!=null)
+				{
+					int iWaitMaxLoop = 100;
+					while(aCurrentProcess.proc.isAlive() && iWaitMaxLoop>0)
+					{
+						iWaitMaxLoop--;
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 				}
 			}
 			
@@ -318,7 +336,7 @@ public class HLProcessMgr
 			consolePrintln("[Termination] All processes terminated");
 			
 			String sTerminateRequestor = terminatingProcess!=null?terminatingProcess.getProcessCodeName():"none";
-			consolePrintln("[Termination] terminating process : "+sTerminateRequestor);
+			consolePrintln("[Termination] Terminating process : "+sTerminateRequestor);
 			printProcessLifeCycle();
 			
 			/**
@@ -353,12 +371,63 @@ public class HLProcessMgr
 	
 	private void printProcessLifeCycle()
 	{
+		List<String> listInitSuccess 	= new ArrayList<String>();
+		List<String> listInitFailed 	= new ArrayList<String>();
+		List<String> listIniting		= new ArrayList<String>();
+		
 		for(HLProcess p : getAllProcesses())
 		{
-			String sRemote = p.isRemoteRef()?" (remote)":"";
-				
-			consolePrintln("[process.lifecycle] "+p.getProcessCodeName()+sRemote+" : "+p.getProcessStateHist());
+			String sRemote 				= p.isRemoteRef()?" (remote)":"";
+			String sProcessName 		= p.getProcessCodeName()+sRemote;
+			String sProcessLifecycle 	= "  [process.lifecycle] "+sProcessName+" : "+p.getProcessStateHist();
+			
+			if(p.isInitSuccess())
+			{
+				listInitSuccess.add(sProcessLifecycle);
+			}
+			else
+			{
+				if(sProcessLifecycle.indexOf(ProcessState.START_INIT_FAILED.toString())>-1)
+				{
+					listInitFailed.add(sProcessLifecycle);
+				}
+				else
+				{
+					listIniting.add(sProcessLifecycle);
+				}
+			}
 		}
+
+		if(listInitSuccess.size()>0)
+		{
+			consolePrintln();
+			consolePrintln("=[Init Success Process(es)]=");
+			for(String sProcessLifecycle: listInitSuccess)
+			{
+				consolePrintln(sProcessLifecycle);
+			}
+		}
+		
+		if(listIniting.size()>0)
+		{
+			consolePrintln();
+			consolePrintln("=[initializing Process(es)]=");
+			for(String sProcessLifecycle: listIniting)
+			{
+				consolePrintln(sProcessLifecycle);
+			}
+		}
+		
+		if(listInitFailed.size()>0)
+		{
+			consolePrintln();
+			consolePrintln("=[Init FAILED Process(es)]=");
+			for(String sProcessLifecycle: listInitFailed)
+			{
+				consolePrintln(sProcessLifecycle);
+			}
+		}
+		consolePrintln();
 	}
 	
 	public void setLogLevel(Level aLogLevel)
