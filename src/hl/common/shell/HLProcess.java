@@ -696,6 +696,24 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					HLProcess procTerminate = new HLProcess(getProcessCodeName()+".terminate", sSplitEndCmd);
 					procTerminate.setCommandEndRegex(getTerminateEndRegex());
 					procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
+					
+					String sOutputFileName = getProcessOutputFilename();
+					if(sOutputFileName!=null && sOutputFileName.trim().length()>0)
+					{
+						int iPos = sOutputFileName.lastIndexOf(".");
+						if(iPos>-1)
+						{
+							String sFileName = sOutputFileName.substring(0, iPos);
+							String sFileExt = sOutputFileName.substring(iPos);
+							sOutputFileName = sFileName + ".terminate" + sFileExt;
+						}
+						else
+						{
+							sOutputFileName += ".terminate";
+						}
+						procTerminate.setProcessOutputFilename(sOutputFileName);
+					}
+					
 					procTerminate.setOutputConsole(isOutputConsole());
 					procTerminate.setRunAsDaemon(isRunAsDaemon());
 					Thread t = new Thread(procTerminate);					
