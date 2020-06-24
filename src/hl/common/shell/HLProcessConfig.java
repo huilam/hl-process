@@ -750,7 +750,10 @@ public class HLProcessConfig {
 		Map<Integer, HLProcess> m = new TreeMap<Integer, HLProcess>();
 		for(HLProcess p : mapProcesses.values())
 		{
-			m.put(p.getShutdownSeq(), p);
+			if(!p.isRemoteRef())
+			{
+				m.put(p.getShutdownSeq(), p);
+			}
 		}
 		return m.values().toArray(new HLProcess[m.size()]);
 	}
