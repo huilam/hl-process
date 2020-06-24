@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -583,6 +584,12 @@ public class HLProcessConfig {
 								throw new RuntimeException("["+sPID+"] Mismatch dependancies configuration - "+sDepId);
 							}
 							
+							procDep.increaseShutdownSeq();
+							for(HLProcess procDepDep : procDep.getDependProcesses())
+							{
+								procDepDep.increaseShutdownSeq();
+							}
+							
 							p.addDependProcess(procDep);
 						}
 					}
@@ -736,6 +743,16 @@ public class HLProcessConfig {
 		
 		Collection<HLProcess> c = mapProcesses.values();
 		return c.toArray(new HLProcess[c.size()]);
+	}
+	
+	protected HLProcess[] getProcessesByShutdownSeq()
+	{
+		Map<Integer, HLProcess> m = new TreeMap<Integer, HLProcess>();
+		for(HLProcess p : mapProcesses.values())
+		{
+			m.put(p.getShutdownSeq(), p);
+		}
+		return m.values().toArray(new HLProcess[m.size()]);
 	}
 	
 	protected HLProcess[] getDisabledProcesses()

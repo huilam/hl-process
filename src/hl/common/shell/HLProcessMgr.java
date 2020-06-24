@@ -483,8 +483,13 @@ public class HLProcessMgr
 
 		if(procConfig!=null)
 		{
-			for(HLProcess p : procConfig.getProcesses())
+			StringBuffer sb = new StringBuffer();
+			for(HLProcess p : procConfig.getProcessesByShutdownSeq())
 			{
+				if(sb.length()>0)
+					sb.append(" > ");
+				sb.append(p.getProcessCodeName());
+				
 				if(!p.isRemoteRef())
 				{
 					if(terminatingProcess!=null && 
@@ -499,7 +504,16 @@ public class HLProcessMgr
 					}
 				}
 			}
+			
+			if(terminatingProcess!=null)
+			{
+				if(sb.length()>0)
+					sb.append(" > ");
+				sb.append(terminatingProcess.getProcessCodeName());
+			}
+			consolePrintln("[TERMINATE] Termination Sequence : "+sb.toString());
 		}
+		
 	}
 
 	public void startAllProcesses()
