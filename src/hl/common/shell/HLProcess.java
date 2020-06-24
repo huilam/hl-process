@@ -492,10 +492,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 							sLine = null;
 							while(!terminate_thread && proc.isAlive())
 							{
-								if(rdr.ready())
-								{
-									sLine = rdr.readLine();
-								}
+								sLine = rdr.readLine();
 			
 								if(sLine!=null)
 								{
@@ -582,8 +579,6 @@ public class HLProcess extends HLProcessCmd implements Runnable
 											
 										}
 									}
-									
-									sLine = null;
 								}
 								else
 								{
@@ -669,7 +664,6 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			onProcessTerminate(this);
 			setCurProcessState(ProcessState.TERMINATED);
 		}
-		System.exit(this.exit_value);
 	}
 	
 	private boolean executeTerminateCmd()
