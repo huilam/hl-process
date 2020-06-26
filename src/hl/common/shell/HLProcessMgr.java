@@ -486,9 +486,12 @@ public class HLProcessMgr
 			StringBuffer sb = new StringBuffer();
 			for(HLProcess p : procConfig.getProcessesByDepCntSeq())
 			{
-				if(sb.length()>0)
-					sb.append(" > ");
-				sb.append(p.getProcessCodeName());
+				if(p!=terminatingProcess)
+				{
+					if(sb.length()>0)
+						sb.append(" > ");
+					sb.append(p.getProcessCodeName());
+				}
 				
 				if(!p.isRemoteRef())
 				{
