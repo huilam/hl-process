@@ -747,14 +747,19 @@ public class HLProcessConfig {
 	protected HLProcess[] getProcessesByDepCntSeq()
 	{
 		Map<Integer, HLProcess> m = new TreeMap<Integer, HLProcess>();
-		for(HLProcess p : mapProcesses.values())
+		if(mapProcesses!=null)
 		{
-			int iDepCount = p.getDepCount();
-			for(HLProcess p2 : p.getDependProcesses())
+			int iSeqNo = 0;
+			for(HLProcess p : mapProcesses.values())
 			{
-				iDepCount += p2.getDepCount();
+				int iDepCount = iSeqNo + (p.getDepCount()*10);
+				for(HLProcess p2 : p.getDependProcesses())
+				{
+					iDepCount += (p2.getDepCount()*100);
+				}
+				m.put(iDepCount, p);
+				iSeqNo++;
 			}
-			m.put(iDepCount, p);
 		}
 		return m.values().toArray(new HLProcess[m.size()]);
 	}
