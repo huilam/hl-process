@@ -584,10 +584,9 @@ public class HLProcessConfig {
 								throw new RuntimeException("["+sPID+"] Mismatch dependancies configuration - "+sDepId);
 							}
 							
-							procDep.increaseShutdownSeq();
 							for(HLProcess procDepDep : procDep.getDependProcesses())
 							{
-								procDepDep.increaseShutdownSeq();
+								procDepDep.increaseDepCount();
 							}
 							
 							p.addDependProcess(procDep);
@@ -745,15 +744,17 @@ public class HLProcessConfig {
 		return c.toArray(new HLProcess[c.size()]);
 	}
 	
-	protected HLProcess[] getProcessesByShutdownSeq()
+	protected HLProcess[] getProcessesByDepCntSeq()
 	{
 		Map<Integer, HLProcess> m = new TreeMap<Integer, HLProcess>();
 		for(HLProcess p : mapProcesses.values())
 		{
-			if(!p.isRemoteRef())
+			int iDepCount = p.getDepCount();
+			for(HLProcess p2 : p.getDependProcesses())
 			{
-				m.put(p.getShutdownSeq(), p);
+				iDepCount += p2.getDepCount();
 			}
+			m.put(iDepCount, p);
 		}
 		return m.values().toArray(new HLProcess[m.size()]);
 	}

@@ -484,7 +484,7 @@ public class HLProcessMgr
 		if(procConfig!=null)
 		{
 			StringBuffer sb = new StringBuffer();
-			for(HLProcess p : procConfig.getProcessesByShutdownSeq())
+			for(HLProcess p : procConfig.getProcessesByDepCntSeq())
 			{
 				if(sb.length()>0)
 					sb.append(" > ");

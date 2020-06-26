@@ -52,18 +52,18 @@ public class HLProcessCmd
 	protected boolean terminate_thread 	= false;
 	protected Thread thread 			= null;
 	protected Process proc 				= null; 
-	protected int shutdown_seq			= 0;
+	protected int dep_count				= 0;
 	
 	public static Logger logger 		= Logger.getLogger(HLProcess.class.getName());
 
-	public void increaseShutdownSeq()
+	public void increaseDepCount()
 	{
-		shutdown_seq++;
+		dep_count++;
 	}
 	
-	public int getShutdownSeq()
+	public int getDepCount()
 	{
-		return shutdown_seq;
+		return dep_count;
 	}
 	
 	public HLProcessCmd(String aId, String[] aShellCmd)
