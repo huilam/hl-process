@@ -668,6 +668,9 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	
 	public boolean executeTerminateCmd()
 	{
+		if(!this.is_init_success)
+			return false;
+			
 		boolean isExecuted = false;
 		if(!this.is_exec_terminate_cmd)
 		{
