@@ -75,7 +75,7 @@ public class HLProcessMgr
 								terminatingProcess = p;
 								terminateAllProcesses();
 								waitForAllProcessesToBeTerminated(terminatingProcess);
-								consolePrintln("[TERMINATE] Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
+								consolePrintln("[TERMINATE] "+p.getProcessCodeName()+" - Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
 								consolePrintln();
 
 							}
