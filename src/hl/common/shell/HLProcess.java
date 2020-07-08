@@ -717,13 +717,14 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			
 			procTerminate.setOutputConsole(isOutputConsole());
 			procTerminate.setRunAsDaemon(isRunAsDaemon());
-			Thread t = new Thread(procTerminate);					
+			Thread t = new Thread(procTerminate);
 			t.start();
 			try {
-				t.join(500);
+				t.join(3000);
 			} catch (InterruptedException e) {
 				logger.warning(e.getMessage());
 			}
+			procTerminate.terminate_thread = true;
 			isExecuted = true;
 		}
 		return isExecuted;
