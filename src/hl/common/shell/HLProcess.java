@@ -661,74 +661,71 @@ public class HLProcess extends HLProcessCmd implements Runnable
 			{
 				this.exit_value = -1;
 			}
-			onProcessTerminate(this);
 			setCurProcessState(ProcessState.TERMINATED);
+			onProcessTerminated(this);
 		}
 	}
 	
-	public boolean executeTerminateCmd()
+	public synchronized boolean executeTerminateCmd()
 	{
 		if(!this.is_init_success)
 			return false;
 			
+		if(this.is_exec_terminate_cmd)
+			return false;
+
+		this.is_exec_terminate_cmd = true;
+		
 		boolean isExecuted = false;
-		if(!this.is_exec_terminate_cmd)
+		String sPrefix = (getProcessCodeName()==null?"":getProcessCodeName());
+		String sEndCmd = getTerminateCommand();
+		if(sEndCmd!=null && sEndCmd.trim().length()>0)
 		{
-			//Waiting for started
-			if(isStarted())
+			sPrefix = "["+sPrefix+"]";
+			
+			String sLine = "[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd;
+			
+			if(isOutputConsole())
 			{
-				this.is_exec_terminate_cmd = true;
-				isExecuted = true;
-				String sPrefix = (getProcessCodeName()==null?"":getProcessCodeName());
-				String sEndCmd = getTerminateCommand();
-				if(sEndCmd!=null && sEndCmd.trim().length()>0)
-				{
-					sPrefix = "["+sPrefix+"]";
-					
-					String sLine = "[Termination] "+sPrefix+" : execute terminated command - "+sEndCmd;
-					
-					if(isOutputConsole())
-					{
-						System.out.println(sLine);
-					}
-					logger.info(sLine);
-					
-					String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);
-					
-					setCurProcessState(ProcessState.STOP_EXEC_CMD);
-					HLProcess procTerminate = new HLProcess(getProcessCodeName()+".terminate", sSplitEndCmd);
-					procTerminate.setCommandEndRegex(getTerminateEndRegex());
-					procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
-					
-					String sOutputFileName = getProcessOutputFilename();
-					if(sOutputFileName!=null && sOutputFileName.trim().length()>0)
-					{
-						int iPos = sOutputFileName.lastIndexOf(".");
-						if(iPos>-1)
-						{
-							String sFileName = sOutputFileName.substring(0, iPos);
-							String sFileExt = sOutputFileName.substring(iPos);
-							sOutputFileName = sFileName + ".terminate" + sFileExt;
-						}
-						else
-						{
-							sOutputFileName += ".terminate";
-						}
-						procTerminate.setProcessOutputFilename(sOutputFileName);
-					}
-					
-					procTerminate.setOutputConsole(isOutputConsole());
-					procTerminate.setRunAsDaemon(isRunAsDaemon());
-					Thread t = new Thread(procTerminate);					
-					t.start();
-					try {
-						t.join(500);
-					} catch (InterruptedException e) {
-						logger.warning(e.getMessage());
-					}
-				}
+				System.out.println(sLine);
 			}
-		}	
+			logger.info(sLine);
+			
+			String sSplitEndCmd[] = HLProcessConfig.splitCommands(this, sEndCmd);
+			
+			setCurProcessState(ProcessState.STOP_EXEC_CMD);
+			HLProcess procTerminate = new HLProcess(getProcessCodeName()+".terminate", sSplitEndCmd);
+			procTerminate.setCommandEndRegex(getTerminateEndRegex());
+			procTerminate.setCommandIdleTimeoutMs(getTerminateIdleTimeoutMs());
+			
+			String sOutputFileName = getProcessOutputFilename();
+			if(sOutputFileName!=null && sOutputFileName.trim().length()>0)
+			{
+				int iPos = sOutputFileName.lastIndexOf(".");
+				if(iPos>-1)
+				{
+					String sFileName = sOutputFileName.substring(0, iPos);
+					String sFileExt = sOutputFileName.substring(iPos);
+					sOutputFileName = sFileName + ".terminate" + sFileExt;
+				}
+				else
+				{
+					sOutputFileName += ".terminate";
+				}
+				procTerminate.setProcessOutputFilename(sOutputFileName);
+			}
+			
+			procTerminate.setOutputConsole(isOutputConsole());
+			procTerminate.setRunAsDaemon(isRunAsDaemon());
+			Thread t = new Thread(procTerminate);					
+			t.start();
+			try {
+				t.join(500);
+			} catch (InterruptedException e) {
+				logger.warning(e.getMessage());
+			}
+			isExecuted = true;
+		}
 		return isExecuted;
 	}
 	
@@ -798,10 +795,10 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		if(this.listener!=null)
 			listener.onProcessError(aHLProcess, e);
 	}
-	private void onProcessTerminate(HLProcess aHLProcess)
+	private void onProcessTerminated(HLProcess aHLProcess)
 	{
 		if(this.listener!=null)
-			listener.onProcessTerminate(aHLProcess);
+			listener.onProcessTerminated(aHLProcess);
 	}
 	
 	public Thread startProcess()

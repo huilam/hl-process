@@ -65,7 +65,7 @@ public class HLProcessMgr
 						}
 					}
 					
-					public void onProcessTerminate(HLProcess p) 
+					public void onProcessTerminated(HLProcess p) 
 					{
 						if(p!=null)
 						{
