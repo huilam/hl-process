@@ -67,9 +67,9 @@ public class HLProcessMgr
 					
 					public void onProcessTerminated(HLProcess p) 
 					{
-						if(p!=null)
+						if(p!=null && !is_terminating_all)
 						{
-							if(p.isShutdownAllOnTermination() && !is_terminating_all)
+							if(p.isShutdownAllOnTermination() && terminatingProcess==null)
 							{
 								long lterminateStartMs = System.currentTimeMillis();
 								terminatingProcess = p;
