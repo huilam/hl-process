@@ -90,6 +90,9 @@ public class HLProcessConfig {
 	private Map<String, HLProcess> mapProcesses 		= new LinkedHashMap<String, HLProcess>();
 	private Map<String, HLProcess> mapDisabledProcesses = new HashMap<String, HLProcess>();
 	
+	
+	private Map<String, String> mapEnvProps 			= new HashMap<String, String>();
+	
 	public static Logger logger = Logger.getLogger(HLProcessConfig.class.getName());
 	//
 	
@@ -240,6 +243,15 @@ public class HLProcessConfig {
 			String sKey = (String) iter.next();
 			String sVal = aProperties.getProperty(sKey);
 			
+			
+			if(sKey.startsWith("envprop."))
+			{
+				String sEnvKey = sKey.substring("envprop.".length());
+				mapEnvProps.put(sEnvKey, sVal);
+				System.setProperty(sEnvKey, sVal);
+				continue;
+			}
+			
 			if(sKey.contains(".dependance."))
 			{
 				throw new RuntimeException("Please change 'depend(a)nce' to 'depend(e)nce' - "+sKey);
@@ -387,6 +399,11 @@ public class HLProcessConfig {
 			if(p==null)
 			{
 				p = new HLProcess(sPID);
+			}
+			
+			if(mapEnvProps!=null && mapEnvProps.size()>0)
+			{
+				p.setEnvProps(mapEnvProps);
 			}
 				
 			// DISABLED

@@ -90,6 +90,7 @@ public class HLProcess extends HLProcessCmd implements Runnable
 	private HLProcess processRequestor			= null;
 	
 	private long dep_wait_log_interval_ms		= 5000;
+	private Map<String, String> mapEnvProps 	= new HashMap<String, String>();
 	
 	public static Logger logger = Logger.getLogger(HLProcess.class.getName());
 
@@ -106,6 +107,15 @@ public class HLProcess extends HLProcessCmd implements Runnable
 		init();
 	}
 	
+	public void setEnvProps(Map<String, String> aEnvPropMap)
+	{
+		mapEnvProps.putAll(aEnvPropMap);
+	}
+	
+	public Map<String, String>getEnvProps(Map<String, String> aEnvPropMap)
+	{
+		return mapEnvProps;
+	}
 	
 	public static String getVersion()
 	{
@@ -440,6 +450,12 @@ public class HLProcess extends HLProcessCmd implements Runnable
 					
 					ProcessBuilder pb = initProcessBuilder(this);
 					try {
+						
+						if(mapEnvProps!=null && mapEnvProps.size()>0)
+						{
+							pb.environment().putAll(mapEnvProps);
+						}
+						
 						proc = pb.start();
 					} catch (IOException e1) {
 						
