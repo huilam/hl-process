@@ -120,7 +120,7 @@ public class FileUtil {
 				
 				while((sLine = rdr.readLine())!=null)
 				{
-					if(sLine.trim().length()>0)
+					if(sb.length()>0)
 					{
 						sb.append("\n");
 					}
