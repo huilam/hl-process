@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,6 +37,7 @@ public class HLProcessConfig {
 	public static String _PROP_KEY_SYSTEM_ASCIIART_FOLDER	 		= _PROP_KEY_SYSTEM+"asciiart.folder";
 	public static String _PROP_KEY_SYSTEM_CMD_PREFIX_NO_OS 			= _PROP_KEY_SYSTEM+"command.prefix";
 	public static String _PROP_KEY_SYSTEM_CMD_PREFIX 				= _PROP_KEY_SYSTEM+"command.prefix.{os.name}";
+	public static String _PROP_KEY_SYSTEM_ADDON_PROPFILES 			= _PROP_KEY_SYSTEM+"addons.properties.files";
 
 	//-- SHELL
 	public static String _PROP_KEY_SHELL							= "shell.";
@@ -136,6 +138,24 @@ public class HLProcessConfig {
 		if(props==null || props.size()==0)
 		{
 			props = PropUtil.loadProperties(_PROP_FILENAME);
+		}
+		
+		String sAddOnPropFiles = props.getProperty(_PROP_KEY_SYSTEM_ADDON_PROPFILES, null);
+		if(sAddOnPropFiles!=null && sAddOnPropFiles.trim().length()>0)
+		{
+			StringTokenizer tk = new StringTokenizer(sAddOnPropFiles, ",");
+			while(tk.hasMoreTokens())
+			{
+				String sPropFileName = tk.nextToken();
+				if(sPropFileName!=null && sPropFileName.trim().length()>0)
+				{
+					Properties propAddons =PropUtil.loadProperties(sPropFileName.trim());
+					if(propAddons!=null && propAddons.keySet().size()>0)
+					{
+						props.putAll(propAddons);
+					}
+				}
+			}
 		}
 		
 		init(props);
