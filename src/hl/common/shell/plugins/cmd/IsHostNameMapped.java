@@ -38,7 +38,7 @@ public class IsHostNameMapped {
 			}	
 			
 			
-			if(sIP!=null && sIP.length()>=6)
+			if(sIP!=null && sIP.length()>=4)
 			{
 				System.out.println("[IsHostNameMapped-OK] "+sHostname+" - "+sIP);
 			}
