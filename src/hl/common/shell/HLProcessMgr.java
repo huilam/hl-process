@@ -25,9 +25,9 @@ public class HLProcessMgr
 	private Map<String, Long> mapInitSuccess 	= null;
 	private boolean isShowStateAsciiArt			= true;
 	
-	private HLProcess terminatingProcess 		= null;
-	private boolean is_terminating_all 			= false;
-	private boolean waitingAllProcessTerminate 	= false;
+	private static HLProcess TERMINATING_PROCESS 		= null;
+	private static boolean IS_TERMINATING_ALL			= false;
+	private static boolean WAIT_ALL_PROCS_TO_TERMINAT 	= false;
 		
 	public HLProcessMgr(String aPropFileName)
 	{
@@ -51,7 +51,7 @@ public class HLProcessMgr
 
 					public void onProcessInitSuccess(HLProcess p) 
 					{
-						if(is_terminating_all)
+						if(IS_TERMINATING_ALL)
 							return;
 						
 						if(p.getCurProcessState().isAtLeast(ProcessState.STARTED))
@@ -67,14 +67,20 @@ public class HLProcessMgr
 					
 					public void onProcessTerminated(HLProcess p) 
 					{
-						if(p!=null && !is_terminating_all)
+						System.out.println("onProcessTerminated()"+p);
+						
+						if(p!=null && !IS_TERMINATING_ALL)
 						{
-							if(p.isShutdownAllOnTermination() && terminatingProcess==null)
+							if(p.isShutdownAllOnTermination() && TERMINATING_PROCESS==null)
 							{
 								long lterminateStartMs = System.currentTimeMillis();
-								terminatingProcess = p;
-								terminateAllProcesses();
-								waitForAllProcessesToBeTerminated(terminatingProcess);
+								TERMINATING_PROCESS = p;
+								
+								if(!IS_TERMINATING_ALL)
+								{
+									terminateAllProcesses();
+								}
+								waitForAllProcessesToBeTerminated(TERMINATING_PROCESS);
 								consolePrintln("[TERMINATE] "+p.getProcessCodeName()+" - Total Terminate Time : "+TimeUtil.milisec2Words(System.currentTimeMillis()-lterminateStartMs));
 								consolePrintln();
 
@@ -87,28 +93,32 @@ public class HLProcessMgr
 		regShutdownHook();
 	}
 	
-	private void regShutdownHook()
+	private synchronized void regShutdownHook()
 	{
+		System.out.println("regShutdownHook()");
 		Runtime.getRuntime().addShutdownHook(new Thread(){
 			@Override
 			public void run() {
 				System.out.println("[ShutdownHook] Executing HLProcessMgr.ShutdownHook ...");
-				//random pick an active process as terminating process
-				for(HLProcess proc : getAllProcesses())
+				
+				if(TERMINATING_PROCESS==null)
 				{
-					if(proc.isProcessAlive())
+					//random pick an active process as terminating process
+					for(HLProcess proc : getAllProcesses())
 					{
-						terminatingProcess = proc;
-						
-						if(proc.isShutdownAllOnTermination())
+						if(proc.isProcessAlive())
 						{
-							break;
+							TERMINATING_PROCESS = proc;
+							
+							if(proc.isShutdownAllOnTermination())
+							{
+								break;
+							}
 						}
 					}
+					terminateAllProcesses();
+					waitForAllProcessesToBeTerminated(TERMINATING_PROCESS);
 				}
-
-				terminateAllProcesses();
-				waitForAllProcessesToBeTerminated(terminatingProcess);
 				
 				System.out.println("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
 			}
@@ -168,10 +178,10 @@ public class HLProcessMgr
 	
 	private synchronized void waitForAllProcessesToBeTerminated(HLProcess aCurrentProcess)
 	{
-		if(this.waitingAllProcessTerminate)
+		if(WAIT_ALL_PROCS_TO_TERMINAT)
 			return;
 		
-		this.waitingAllProcessTerminate = true;
+		WAIT_ALL_PROCS_TO_TERMINAT = true;
 		
 		long lStart = System.currentTimeMillis();
 		long lShutdownElapsed 		= 0;
@@ -334,7 +344,7 @@ public class HLProcessMgr
 			//logger.log(Level.INFO, "All processes terminated");
 			consolePrintln("[Termination] All processes terminated");
 			
-			String sTerminateRequestor = terminatingProcess!=null?terminatingProcess.getProcessCodeName():"none";
+			String sTerminateRequestor = TERMINATING_PROCESS!=null?TERMINATING_PROCESS.getProcessCodeName():"none";
 			consolePrintln("[Termination] Terminating process : "+sTerminateRequestor);
 			printProcessLifeCycle();
 			
@@ -463,15 +473,15 @@ public class HLProcessMgr
 	
 	public synchronized void terminateAllProcesses()
 	{		
-		if(this.is_terminating_all)
+		if(IS_TERMINATING_ALL)
 			return;
 			
-		this.is_terminating_all = true;
+		IS_TERMINATING_ALL = true;
 		
 		String sTerminateReq = "SYSTEM";
-		if(terminatingProcess!=null)
+		if(TERMINATING_PROCESS!=null)
 		{
-			sTerminateReq = terminatingProcess.getProcessCodeName();
+			sTerminateReq = TERMINATING_PROCESS.getProcessCodeName();
 		}
 		if(isShowStateAsciiArt)
 		{										
@@ -486,7 +496,7 @@ public class HLProcessMgr
 			StringBuffer sb = new StringBuffer();
 			for(HLProcess p : procConfig.getProcessesByDepCntSeq())
 			{
-				if(p!=terminatingProcess)
+				if(p!=TERMINATING_PROCESS)
 				{
 					if(sb.length()>0)
 						sb.append(" > ");
@@ -495,24 +505,24 @@ public class HLProcessMgr
 				
 				if(!p.isRemoteRef())
 				{
-					if(terminatingProcess!=null && 
-					   terminatingProcess.getProcessCodeName().equals(p.getProcessCodeName()))
+					if(TERMINATING_PROCESS!=null && 
+							TERMINATING_PROCESS.getProcessCodeName().equals(p.getProcessCodeName()))
 					{
 						p.setCurProcessState(ProcessState.STOPPING);
 					}
 					else if(!p.isTerminating())
 					{
-						p.reqStateChange(terminatingProcess, ProcessState.STOP_REQUEST);
+						p.reqStateChange(TERMINATING_PROCESS, ProcessState.STOP_REQUEST);
 						p.terminateProcess();
 					}
 				}
 			}
 			
-			if(terminatingProcess!=null)
+			if(TERMINATING_PROCESS!=null)
 			{
 				if(sb.length()>0)
 					sb.append(" > ");
-				sb.append(terminatingProcess.getProcessCodeName());
+				sb.append(TERMINATING_PROCESS.getProcessCodeName());
 			}
 			consolePrintln("[TERMINATE] Termination Sequence : "+sb.toString());
 		}
@@ -528,10 +538,10 @@ public class HLProcessMgr
 	{
 		this.startTimestamp = System.currentTimeMillis();
 
-		if(this.is_terminating_all)
+		if(IS_TERMINATING_ALL)
 			return;
 		
-		this.is_terminating_all = false;
+		IS_TERMINATING_ALL = false;
 		
 		long lStart = System.currentTimeMillis();
 		int lPendingStart = procConfig.getProcesses().length;
