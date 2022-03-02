@@ -28,14 +28,14 @@ public class IsHostNameMapped {
 				}
 				catch(Throwable t)
 				{
-					t.printStackTrace();
+					//t.printStackTrace();
 					sIP = null;
 				}
 				
 			}
 			catch(Throwable t2)
 			{
-				t2.printStackTrace();
+				//t2.printStackTrace();
 				sIP = null;
 			}	
 			
