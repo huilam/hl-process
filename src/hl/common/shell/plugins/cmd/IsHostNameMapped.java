@@ -26,15 +26,17 @@ public class IsHostNameMapped {
 						sIP = ipAddr.getHostAddress();
 					}
 				}
-				catch(UnknownHostException e)
+				catch(Throwable t)
 				{
+					t.printStackTrace();
+					sIP = null;
 				}
 				
 			}
-			catch(Exception ex)
+			catch(Throwable t2)
 			{
-				ex.printStackTrace();
-				isSyntaxErr = true;
+				t2.printStackTrace();
+				sIP = null;
 			}	
 			
 			
@@ -44,7 +46,7 @@ public class IsHostNameMapped {
 			}
 			else
 			{
-				System.out.println("[IsHostNameMapped-ERR] "+sHostname+" NOT mapped to any IP addresses.");
+				System.err.println("[IsHostNameMapped-ERR] "+sHostname+" NOT mapped to any IP addresses.");
 			}
 			
 			
