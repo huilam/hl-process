@@ -51,6 +51,7 @@ public class IsHostNameMapped {
 					
 					if(file.isFile())
 					{
+						System.out.println("Reading "+file.getName()+" ...");
 						String sContent = FileUtil.loadContent(file.getAbsolutePath());
 						
 						StringTokenizer tk1 = new StringTokenizer(sContent, "\n");
@@ -62,7 +63,7 @@ public class IsHostNameMapped {
 							{
 								String sStr2 = tk2.nextToken().trim();
 								listHostName.add(sStr2);
-								System.out.println(" Adding "+sStr2);
+								System.out.println("  - Adding "+sStr2);
 							}
 							
 						}
