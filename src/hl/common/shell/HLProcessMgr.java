@@ -28,6 +28,8 @@ public class HLProcessMgr
 	private static HLProcess TERMINATING_PROCESS 		= null;
 	private static boolean IS_TERMINATING_ALL			= false;
 	private static boolean WAIT_ALL_PROCS_TO_TERMINAT 	= false;
+	
+	private static int SYSTEM_EXIT_CODE = 0;
 		
 	public HLProcessMgr(String aPropFileName)
 	{
@@ -121,6 +123,9 @@ public class HLProcessMgr
 				}
 				
 				System.out.println("[ShutdownHook] End of HLProcessMgr.ShutdownHook.");
+				
+				System.out.println("[ShutdownHook] executing Runtime.halt("+SYSTEM_EXIT_CODE+") ...");
+				Runtime.getRuntime().halt(SYSTEM_EXIT_CODE);;
 			}
 		});		
 	}
@@ -295,20 +300,23 @@ public class HLProcessMgr
 			
 							//logger.log(Level.WARNING, sb.toString());
 							consolePrintln(sb.toString());
-							consolePrintln("[Termination] execute 'System.exit(1)'");
 							if(aCurrentProcess!=null && !aCurrentProcess.isTerminated())
 							{
 								aCurrentProcess.terminateProcess();
 							}
-							printProcessLifeCycle();
-							System.exit(1);
+							iActiveProcess = 0;
+							SYSTEM_EXIT_CODE = 1;
 						}
 					}
 					///////
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
+					
+					if(iActiveProcess>0)
+					{
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
 					}
 				}
 				
@@ -347,6 +355,9 @@ public class HLProcessMgr
 			String sTerminateRequestor = TERMINATING_PROCESS!=null?TERMINATING_PROCESS.getProcessCodeName():"none";
 			consolePrintln("[Termination] Terminating process : "+sTerminateRequestor);
 			printProcessLifeCycle();
+			
+			System.out.println("[HLProcessMgr.finally] executing System.exit("+SYSTEM_EXIT_CODE+") ...");
+			System.exit(SYSTEM_EXIT_CODE);
 			
 			/**
 			StringBuffer sb = new StringBuffer();
