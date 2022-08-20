@@ -58,7 +58,7 @@ public class HLProcessMgr
 						
 						if(p.getCurProcessState().isAtLeast(ProcessState.STARTED))
 						{
-							mapInitSuccess.put(p.getProcessCodeName(), new Long(System.currentTimeMillis()));
+							mapInitSuccess.put(p.getProcessCodeName(), System.currentTimeMillis());
 							
 							if(mapInitSuccess.size()==getAllProcesses().length)
 							{
