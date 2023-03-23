@@ -1,4 +1,4 @@
-package hl.common;
+package hl.common.shell.utils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
