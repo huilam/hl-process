@@ -1,25 +1,36 @@
-package hl.common.shell.utils;
+package hl.common;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Vector;
+import java.util.logging.Logger;
 
 public class FileUtil {
 
+	private static Logger logger = Logger.getLogger(FileUtil.class.getName());
 	private static final int BUFFER_SIZE = 32768;
 	
 	public static File getJavaClassPath(Class aClass)
@@ -83,10 +94,15 @@ public class FileUtil {
 			
 			if(sData==null)
 			{
-				//resource bundle
+				//resource bundle				
+				if(!aResourcePath.startsWith("/"))
+				{
+					aResourcePath = "/"+aResourcePath;
+				}
+
 				InputStream in = null;
 				try {
-					in = FileUtil.class.getResourceAsStream(aResourcePath);
+					in = getCallerClass().getResourceAsStream(aResourcePath);
 					if(in!=null)
 					{
 						sData = getContent(new InputStreamReader(in));
@@ -276,7 +292,257 @@ public class FileUtil {
 		return list;
 	}
     
-    public static void main(String args[]) throws IOException
+	public static String getBase64(File aFile) throws IOException
+	{
+		byte[] bytes = getBytes(aFile);
+		return Base64.getEncoder().encodeToString(bytes);
+	}
+	
+	public static byte[] getBytes(File aFile) throws IOException
+	{
+		ByteArrayOutputStream byteOut	= null;
+		BufferedOutputStream out 		= null;
+		BufferedInputStream in 			= null;
+		
+		try {
+			byteOut		= new ByteArrayOutputStream();
+			out 		= new BufferedOutputStream(byteOut);
+			in 			= new BufferedInputStream(new FileInputStream(aFile));
+			
+			byte[] buff = new byte[8*1024];
+			int n = 0;
+		    while ((n = in.read(buff)) >= 0) {
+		        out.write(buff, 0, n);
+		    }
+		    out.flush();
+		    return byteOut.toByteArray();
+		}
+		finally
+		{
+			if(in!=null)
+			{
+				in.close();
+			}
+			if(out!=null)
+			{
+				out.close();
+			}
+			if(byteOut!=null)
+			{
+				byteOut.close();
+			}
+		}
+	}
+	
+	public static byte[] getBytesFromBase64(String aBase64) throws IOException
+	{
+		ByteArrayOutputStream byteOut	= null;
+		BufferedOutputStream out 		= null;
+		ByteArrayInputStream in 		= null;
+		
+		try {
+			byteOut		= new ByteArrayOutputStream();
+			out 		= new BufferedOutputStream(byteOut);
+			in 			= new ByteArrayInputStream(Base64.getDecoder().decode(aBase64));
+			
+			byte[] buff = new byte[64*1024];
+			int n = 0;
+		    while ((n = in.read(buff)) >= 0) {
+		        out.write(buff, 0, n);
+		    }
+		    return byteOut.toByteArray();
+		}
+		finally
+		{
+			if(in!=null)
+			{
+				in.close();
+			}
+			if(out!=null)
+			{
+				out.close();
+			}
+			if(byteOut!=null)
+			{
+				byteOut.close();
+			}
+		}
+	}
+	
+	public static boolean loadNativeLib(String aLibraryName, String aLibPath) throws Exception
     {
+    	boolean isLoaded = false;
+    	Throwable exception = null;
+    	String sLoadFrom = "";
+    	
+    	try {
+    		System.loadLibrary(aLibraryName);
+    		isLoaded = true;
+    		sLoadFrom = "System : "+aLibraryName;
+    	}
+    	catch(Throwable e)
+    	{
+    		isLoaded = false;
+    		exception = e;
+    	}
+    	
+    	if(!isLoaded && aLibPath!=null && aLibPath.trim().length()>0)
+    	{
+			StringBuffer sbLibFileName = new StringBuffer(aLibPath);
+			
+			if(!aLibPath.endsWith("/"))
+				sbLibFileName.append("/");
+			
+			String sOSName = System.getProperty("os.name");
+			if(sOSName==null)
+				sOSName = "";
+			
+			boolean isWindows = sOSName.toLowerCase().indexOf("win")>-1;
+			boolean isMac = sOSName.toLowerCase().indexOf("mac")>-1;
+			
+			if(!isWindows)
+			{
+				sbLibFileName.append("lib");
+			}
+			
+			sbLibFileName.append(aLibraryName);
+			
+			if(isWindows)
+			{
+				sbLibFileName.append(".dll");
+			}
+			else if(isMac)
+			{
+				sbLibFileName.append(".dylib");
+			}
+			else
+			{
+				sbLibFileName.append(".so");
+			}
+			
+			String sLibLoadPath = URLEncoder.encode(sbLibFileName.toString(), "UTF-8");
+			
+			sLibLoadPath = sLibLoadPath.replaceAll("%2F", "/");
+			sLibLoadPath = sLibLoadPath.replaceAll("%5C", "/");
+			
+			//System.out.println("### Encoded URL : "+sLibLoadPath);
+			
+			//Trying to load it from achieve (WAR etc)
+	    	URL url = getCallerClass().getResource(sLibLoadPath);
+	    	sLoadFrom = "Archive";
+	    	if(url==null)
+	    	{
+	    		try {
+	    			//Trying to load it from physical path
+					url = new URL("file://"+sLibLoadPath);
+					sLoadFrom = "File";
+				} catch (MalformedURLException e) {
+					e.printStackTrace();
+				}
+	    	}
+	    	
+	    	sLibLoadPath = URLDecoder.decode(url.getPath(), "UTF-8");
+	    	sLoadFrom += " : "+sLibLoadPath;
+	    	
+	    	try {
+	    		//System.out.println("### Trying to load from "+sLibLoadPath);
+	    		System.load(sLibLoadPath);
+	        	isLoaded = true;
+	        } catch (Throwable e) {
+	        	exception = e;
+	    		isLoaded = false;
+	        }
+    	}
+    	
+    	if(!isLoaded && exception!=null)
+    	{
+    		throw new Exception(exception.getMessage()+"- libname:"+aLibraryName+" libpath:"+aLibPath);
+    	}
+    	
+    	if(isLoaded)
+    	{
+    		System.out.println("Successfully loaded native libraries "+aLibraryName+" from "+sLoadFrom);
+    	}
+    	
+    	return isLoaded;
+    }
+	
+	private static Class getCallerClass() 
+	{
+		StackTraceElement[] stacks = Thread.currentThread().getStackTrace();
+		Class classCaller = FileUtil.class;
+		
+		for(int i=0; i<stacks.length; i++)
+		{
+			String sCallerClassName = stacks[i].getClassName();
+			
+			if("javax.servlet.http.HttpServlet".equals(sCallerClassName))
+			{
+				return FileUtil.class;
+			}
+			//System.out.println(" - "+i+" ) "+sCallerClassName);
+		}
+		
+		for(int i=0; i<stacks.length; i++)
+		{
+			String sCallerClassName = stacks[i].getClassName();
+			
+			//System.out.println("++getCallerClass()="+sCallerClassName);
+			
+			if(sCallerClassName.equals(FileUtil.class.getName())
+				|| sCallerClassName.equals(Thread.class.getName()))
+				continue;
+			
+			try {
+				Class.forName(sCallerClassName);
+				classCaller = Class.forName(sCallerClassName);
+				break;
+			} catch (ClassNotFoundException e) {
+			}			
+		}
+		
+		return classCaller;
+	}
+	
+	public static File[] getFilesWithExtensions(File aFolder, String[] aFileExts)
+	{
+		File[] files = new File[]{};
+		
+		if(aFolder!=null && aFolder.isDirectory())
+		{
+			if(aFileExts!=null && aFileExts.length>0)
+			{
+				files = aFolder.listFiles(
+							new FilenameFilter() {
+					
+							@Override
+							public boolean accept(File dir, String name) {
+								String sFName = name.toUpperCase();
+								for(String sExt : aFileExts)
+								{
+									if(sFName.endsWith(sExt.toUpperCase()))
+									{
+										return true;
+									}
+								}
+								return false;
+							}
+						});
+			}
+			else
+			{
+				files = aFolder.listFiles();
+			}
+		}
+		
+		return files;
+	}
+	
+    public static void main(String args[]) throws Exception
+    {
+    	
+    	System.out.println(URLEncoder.encode("\\", "UTF-8"));
+    	
+    	
     }
 }
